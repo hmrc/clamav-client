@@ -15,9 +15,6 @@
  */
 
 package uk.gov.hmrc.clamav.config
-
-import play.api.Logger
-import uk.gov.hmrc.clamav.config.ClamAvConfig.clamAvConfig
 case class ClamAvConfig(enabled : Boolean,
                             chunkSize : Int,
                             host : String,
@@ -30,19 +27,9 @@ case class ClamAvConfig(enabled : Boolean,
   val status = "nSTATS\n"
 
   val okClamAvResponse = "stream: OK"
-
-  def socket = {
-    import java.net.{InetSocketAddress, Socket}
-    val sock = new Socket
-    sock.setSoTimeout(clamAvConfig.timeout)
-    val address: InetSocketAddress = new InetSocketAddress(clamAvConfig.host, clamAvConfig.port)
-    Logger.debug(s"Attempting connection to : $address")
-    sock.connect(address)
-    sock
-  }
 }
 
 object ClamAvConfig {
 
-  lazy val clamAvConfig = ClamAvConfig(true, 33769, "127.0.0.1", 3310, 5000, 29)
+  lazy val clamAvConfig = ClamAvConfig(true, 33768, "avscan", 3310, 5000, 20)
 }
