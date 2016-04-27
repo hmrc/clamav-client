@@ -17,7 +17,10 @@ object HmrcBuild extends Build {
       name := appName,
       targetJvm := "jvm-1.7",
       libraryDependencies ++= Seq(
+        "uk.gov.hmrc" %% "play-json-logger" % "2.1.1",
+        "uk.gov.hmrc" %% "play-authorisation" % "3.1.0",
         Test.scalaTest,
+        Test.hmrcTest,
         Test.pegdown
       ),
       Developers()
@@ -31,6 +34,7 @@ private object BuildDependencies {
 
   sealed abstract class Test(scope: String) {
     val scalaTest = "org.scalatest" %% "scalatest" % "2.2.4" % scope
+    val hmrcTest = "uk.gov.hmrc" %% "hmrctest" % "1.4.0" % scope
     val pegdown = "org.pegdown" % "pegdown" % "1.5.0" % scope
   }
 
