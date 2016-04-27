@@ -9,7 +9,7 @@ object HmrcBuild extends Build {
   import BuildDependencies._
   import uk.gov.hmrc.DefaultBuildSettings._
 
-  val appName = "clamav-stream"
+  val appName = "clamav-client"
 
   lazy val microservice = Project(appName, file("."))
     .enablePlugins(SbtAutoBuildPlugin, SbtGitVersioning)
