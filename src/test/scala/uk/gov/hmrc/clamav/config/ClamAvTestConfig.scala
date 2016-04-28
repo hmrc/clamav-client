@@ -27,6 +27,7 @@ case class ClamAvConfig(enabled : Boolean,
   val status = "nSTATS\n"
 
   val okClamAvResponse = "stream: OK"
+  val test = "test"
 }
 
 object ClamAvConfig {
