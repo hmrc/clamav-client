@@ -28,7 +28,7 @@ class ClamAvSpec extends UnitSpec with WithFakeApplication {
   private val cleanFile = "/162000101.pdf"
 
   def instance(): ClamAntiVirus = {
-    val clamAvConfig = ClamAvConfig(true, 33769, "127.0.0.1", 3310, 5000, 29)
+    val clamAvConfig = ClamAvConfig(true, 33769, "avscan", 3310, 5000, 29)
     new ClamAntiVirus()(clamAvConfig)
   }
 

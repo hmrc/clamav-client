@@ -16,19 +16,22 @@
 
 package uk.gov.hmrc.clamav
 
+import uk.gov.hmrc.clamav.config.ClamAvConfig
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
 class ClamAvResponseInterpreterSpec extends UnitSpec with WithFakeApplication {
   val interpreter = new ClamAvResponseInterpreter {}
 
+  val clamAvConfig = new ClamAvConfig(true, 33769, "avscan", 3310, 5000, 29)
+
   "Interpreting responses from ClamAV" should {
     "return without exception on an OK response" in {
-      interpreter.interpretResponseFromClamd(Some("stream: OK"))(uk.gov.hmrc.clamav.config.ClamAvConfig.clamAvConfig)
+      interpreter.interpretResponseFromClamd(Some("stream: OK"))(clamAvConfig)
     }
 
     "throw a VirusDetectedException on a FOUND response" in {
       intercept[VirusDetectedException] {
-        interpreter.interpretResponseFromClamd(Some("stream: Eicar-Test-Signature FOUND"))(uk.gov.hmrc.clamav.config.ClamAvConfig.clamAvConfig)
+        interpreter.interpretResponseFromClamd(Some("stream: Eicar-Test-Signature FOUND"))(clamAvConfig)
       }
     }
 
@@ -36,7 +39,7 @@ class ClamAvResponseInterpreterSpec extends UnitSpec with WithFakeApplication {
       intercept[VirusScannerFailureException] {
         // we have observed that when clamav fails under high load we get an
         // empty response
-        interpreter.interpretResponseFromClamd(None)(uk.gov.hmrc.clamav.config.ClamAvConfig.clamAvConfig)
+        interpreter.interpretResponseFromClamd(None)(clamAvConfig)
       }
     }
   }
