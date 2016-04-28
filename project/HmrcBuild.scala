@@ -6,7 +6,6 @@ import uk.gov.hmrc.versioning.SbtGitVersioning
 
 object HmrcBuild extends Build {
 
-  import BuildDependencies._
   import uk.gov.hmrc.DefaultBuildSettings._
 
   val appName = "clamav-client"
@@ -15,34 +14,36 @@ object HmrcBuild extends Build {
     .enablePlugins(SbtAutoBuildPlugin, SbtGitVersioning)
     .settings(
       name := appName,
-      targetJvm := "jvm-1.7",
-      libraryDependencies ++= Seq(
-        "uk.gov.hmrc" %% "play-json-logger" % "2.1.1",
-        "uk.gov.hmrc" %% "play-authorisation" % "3.1.0",
-        Test.scalaTest,
-        Test.hmrcTest,
-        Test.pegdown
-      ),
-      Developers()
+      targetJvm := "jvm-1.8",
+      libraryDependencies ++= AppDependencies(),
+      resolvers := Seq(
+          Resolver.bintrayRepo("hmrc", "releases"),
+          "typesafe-releases" at "http://repo.typesafe.com/typesafe/releases/"
+      )
     )
 }
 
-private object BuildDependencies {
+private object AppDependencies {
 
-  object Compile {
+  val compile =  Seq(
+    "uk.gov.hmrc" %% "play-json-logger" % "2.1.1",
+    "uk.gov.hmrc" %% "play-authorisation" % "3.1.0"
+  )
+
+  trait TestDependencies {
+    lazy val scope: String = "test"
+    lazy val test: Seq[ModuleID] = ???
   }
 
-  sealed abstract class Test(scope: String) {
-    val scalaTest = "org.scalatest" %% "scalatest" % "2.2.4" % scope
-    val hmrcTest = "uk.gov.hmrc" %% "hmrctest" % "1.4.0" % scope
-    val pegdown = "org.pegdown" % "pegdown" % "1.5.0" % scope
+  object Test {
+    def apply() = new TestDependencies {
+      override lazy val test = Seq(
+        "org.scalatest" %% "scalatest" % "2.2.4" % scope,
+        "uk.gov.hmrc" %% "hmrctest" % "1.4.0" % scope,
+        "org.pegdown" % "pegdown" % "1.5.0" % scope
+      )
+    }.test
   }
 
-  object Test extends Test("test")
-
-}
-
-object Developers {
-
-  def apply() = developers := List[Developer]()
+  def apply() = compile ++ Test()
 }
