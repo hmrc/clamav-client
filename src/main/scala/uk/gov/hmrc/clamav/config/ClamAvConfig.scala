@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.clamav.config
 
-import play.api.{Logger, Play}
+import play.api.{Configuration, Play, Logger}
 
 case class ClamAvConfig(enabled : Boolean,
                         chunkSize : Int,
@@ -50,10 +50,10 @@ trait ClamAvSocket {
 
 object LoadClamAvConfig {
 
-  import play.api.Play.current
+//  import play.api.Play.current
 
-  def apply(key: String): ClamAvConfig = {
-    Play.configuration.getConfig(key).map { c =>
+  def apply(key: String, configuration: Configuration): ClamAvConfig = {
+    configuration.getConfig(key).map { c =>
 
       val enabled = c.getBoolean("enabled").getOrElse(true)
 
@@ -72,4 +72,5 @@ object LoadClamAvConfig {
 
     }
   }.getOrElse(throw new Exception("Missing clamav configuration"))
+
 }
