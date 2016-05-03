@@ -24,6 +24,16 @@ class LoadClamAvConfigSpec extends UnitSpec with WithFakeApplication {
       clamAvConfig.threadPoolSize shouldBe 20
     }
 
+    "load the ClamConfig default disabled values when enabled is set to false" in {
+      val clamAvConfig = LoadClamAvConfig("clam", configuration = configuration(false))
+      clamAvConfig.chunkSize shouldBe 0
+      clamAvConfig.enabled shouldBe false
+      clamAvConfig.host shouldBe ""
+      clamAvConfig.port shouldBe 3310
+      clamAvConfig.timeout shouldBe 0
+      clamAvConfig.threadPoolSize shouldBe 0
+    }
+
     "throw and exception if there is no clam config setup " in {
       intercept[Exception] {
         LoadClamAvConfig("clam", configuration = configuration(false, "incorrect-key"))

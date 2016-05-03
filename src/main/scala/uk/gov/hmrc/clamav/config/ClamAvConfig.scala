@@ -50,8 +50,6 @@ trait ClamAvSocket {
 
 object LoadClamAvConfig {
 
-//  import play.api.Play.current
-
   def apply(key: String, configuration: Configuration): ClamAvConfig = {
     configuration.getConfig(key).map { c =>
 
