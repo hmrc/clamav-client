@@ -17,7 +17,6 @@
 package uk.gov.hmrc.clamav.config
 
 import play.api.{Configuration, Logger}
-import net.ceedubs.ficus.Ficus._
 
 case class ClamAvConfig(enabled : Boolean,
                         chunkSize : Int,
