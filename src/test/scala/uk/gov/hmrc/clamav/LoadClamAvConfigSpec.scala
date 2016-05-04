@@ -22,16 +22,21 @@ import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
 class LoadClamAvConfigSpec extends UnitSpec with WithFakeApplication {
 
-  def configuration(enabled: Boolean, key: String = "clam"): Option[Configuration] = {
+  def configuration(enabled: Boolean): Option[Configuration] = {
     Option(Configuration.from(
-    Map(key ->
       Map("enabled" -> enabled , "chunkSize" -> 32768, "host" -> "avscan", "port" -> 3310, "timeout" -> 5000, "threadPoolSize" -> 20))
-    ))
+    )
+  }
+
+  def badConfiguration(): Option[Configuration] = {
+    Option(Configuration.from(
+      Map("chunkSize" -> 32768, "host" -> "avscan", "port" -> 3310, "timeout" -> 5000, "threadPoolSize" -> 20))
+    )
   }
 
   "Test the LoadClamAvConfig" should {
     "load the ClamConfig from the play application config if present" in {
-      val clamAvConfig = LoadClamAvConfig("clam", configuration = configuration(true))
+      val clamAvConfig = LoadClamAvConfig(configuration = configuration(true))
       clamAvConfig.chunkSize shouldBe 32768
       clamAvConfig.enabled shouldBe true
       clamAvConfig.host shouldBe "avscan"
@@ -41,7 +46,17 @@ class LoadClamAvConfigSpec extends UnitSpec with WithFakeApplication {
     }
 
     "load the ClamConfig default disabled values when enabled is set to false" in {
-      val clamAvConfig = LoadClamAvConfig("clam", configuration = configuration(false))
+      val clamAvConfig = LoadClamAvConfig(configuration = configuration(false))
+      clamAvConfig.chunkSize shouldBe 0
+      clamAvConfig.enabled shouldBe false
+      clamAvConfig.host shouldBe ""
+      clamAvConfig.port shouldBe 3310
+      clamAvConfig.timeout shouldBe 0
+      clamAvConfig.threadPoolSize shouldBe 0
+    }
+
+    "load the ClamConfig default disabled values when enabled is missing in config" in {
+      val clamAvConfig = LoadClamAvConfig(configuration = badConfiguration)
       clamAvConfig.chunkSize shouldBe 0
       clamAvConfig.enabled shouldBe false
       clamAvConfig.host shouldBe ""
@@ -52,7 +67,7 @@ class LoadClamAvConfigSpec extends UnitSpec with WithFakeApplication {
 
     "throw and exception if there is no clam config setup " in {
       intercept[Exception] {
-        LoadClamAvConfig("clam", configuration = configuration(false, "incorrect-key"))
+        LoadClamAvConfig(configuration = None)
       }
     }
   }
