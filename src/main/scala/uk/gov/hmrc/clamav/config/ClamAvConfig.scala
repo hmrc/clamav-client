@@ -50,8 +50,10 @@ trait ClamAvSocket {
 
 object LoadClamAvConfig {
 
-  def apply(key: String, configuration: Configuration): ClamAvConfig = {
-    configuration.getConfig(key).map { c =>
+  def apply(key: String = "clam", configuration: Option[Configuration]): ClamAvConfig = {
+    val config = configuration.getOrElse(throw new Exception("Missing clamav configuration"))
+
+    config.getConfig(key).map { c =>
 
       val enabled = c.getBoolean("enabled").getOrElse(true)
 
