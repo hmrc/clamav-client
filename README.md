@@ -3,9 +3,57 @@
 
 [![Build Status](https://travis-ci.org/hmrc/clamav-client.svg?branch=master)](https://travis-ci.org/hmrc/clamav-client) [ ![Download](https://api.bintray.com/packages/hmrc/releases/clamav-client/images/download.svg) ](https://bintray.com/hmrc/releases/clamav-client/_latestVersion)
 
-This is a placeholder README.md for a new repository
+## Local Installation
 
-### License
+This requires [ClamAV](http://www.clamav.net/) to be installed
 
-This code is open source software licensed under the [Apache 2.0 License]("http://www.apache.org/licenses/LICENSE-2.0.html").
-    
+For Macs
+
+```brew install clamav```
+
+You can find a slightly longer explaination [here](https://gist.github.com/paulspringett/8802240)
+
+You will also need to add the following alias to your /etc/hosts
+
+```127.0.0.1       avscan```
+
+## Configuring your MicroService
+
+###### To use clamav-client 
+Add the latest released version of the clamav-client to your app dependencies of your micro service build
+
+e.g. ```"uk.gov.hmrc" %% "clamav-client" % "1.4.0"```
+
+Your _**application.conf**_ should be configured to enable clamav scanning
+
+
+```JavaScript
+clam.antivirus {            
+    enabled = true          
+    chunkSize = 32768       
+    host = avscan           
+    port = 3310             
+    timeout = 5000          
+    threadPoolSize = 20     
+    maxLength = 10485760    
+}
+```
+
+Wire up your microservice to load the ClamAvConfig
+
+```JavaScript
+object ClamAvConfiguration extends RunMode {
+
+  lazy val config: Option[Configuration]  = Play.current.configuration.getConfig(s"$env.clam.antivirus")
+  lazy val clamAvConfig = LoadClamAvConfig(config)
+
+}
+```
+
+Use ClamAntiVirus
+
+```JavaScript
+def clamAv: ClamAntiVirus = new ClamAntiVirus()(ClamAvConfiguration.clamAvConfig)
+clamAv.send(stream)
+clamAv.checkForVirus()
+```
