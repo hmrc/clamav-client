@@ -22,7 +22,9 @@ You will also need to add the following alias to your /etc/hosts
 ###### To use clamav-client 
 Add the latest released version of the clamav-client to your app dependencies of your micro service build
 
-e.g. ```"uk.gov.hmrc" %% "clamav-client" % "1.4.0"```
+
+
+e.g. ```"uk.gov.hmrc" %% "clamav-client" % "```[```version```](https://bintray.com/hmrc/releases/clamav-client/_latestVersion)```"```
 
 Your _**application.conf**_ should be configured to enable clamav scanning
 
