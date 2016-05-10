@@ -22,7 +22,7 @@ import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 class ClamAvResponseInterpreterSpec extends UnitSpec with WithFakeApplication {
   val interpreter = new ClamAvResponseInterpreter {}
 
-  val clamAvConfig = new ClamAvConfig(true, 33769, "avscan", 3310, 5000, 29)
+  val clamAvConfig = new ClamAvConfig(true, 33769, "avscan", 3310, 5000, 29, 10485760)
 
   "Interpreting responses from ClamAV" should {
     "return without exception on an OK response" in {

@@ -23,7 +23,8 @@ case class ClamAvConfig(enabled : Boolean,
                         host : String,
                         port : Int,
                         timeout : Int,
-                        threadPoolSize : Int) {
+                        threadPoolSize : Int,
+                        maxLength : Int) {
 
   val instream = "zINSTREAM\u0000"
   val ping = "zPING\u0000"
@@ -61,10 +62,11 @@ object LoadClamAvConfig {
           host = c.getString("host").getOrElse("localhost"),
           port = c.getInt("port").getOrElse(3310),
           timeout = c.getInt("timeout").getOrElse(5000),
-          threadPoolSize = c.getInt("threadPoolSize").getOrElse(20)
+          threadPoolSize = c.getInt("threadPoolSize").getOrElse(20),
+          maxLength = c.getInt("maxLength").getOrElse(10485760)
         )
       } else {
-        ClamAvConfig(enabled = false, chunkSize = 0, host = "", port = 3310, timeout = 0, threadPoolSize = 0 )
+        ClamAvConfig(enabled = false, chunkSize = 0, host = "", port = 3310, timeout = 0, threadPoolSize = 0, maxLength = 0 )
       }
 
     }

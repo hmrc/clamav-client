@@ -24,13 +24,13 @@ class LoadClamAvConfigSpec extends UnitSpec with WithFakeApplication {
 
   def configuration(enabled: Boolean): Option[Configuration] = {
     Option(Configuration.from(
-      Map("enabled" -> enabled , "chunkSize" -> 32768, "host" -> "avscan", "port" -> 3310, "timeout" -> 5000, "threadPoolSize" -> 20))
+      Map("enabled" -> enabled , "chunkSize" -> 32768, "host" -> "avscan", "port" -> 3310, "timeout" -> 5000, "threadPoolSize" -> 20, "maxLength" -> 10485760))
     )
   }
 
   def badConfiguration(): Option[Configuration] = {
     Option(Configuration.from(
-      Map("chunkSize" -> 32768, "host" -> "avscan", "port" -> 3310, "timeout" -> 5000, "threadPoolSize" -> 20))
+      Map("chunkSize" -> 32768, "host" -> "avscan", "port" -> 3310, "timeout" -> 5000, "threadPoolSize" -> 20, "maxLength" -> 10485760))
     )
   }
 
@@ -43,6 +43,7 @@ class LoadClamAvConfigSpec extends UnitSpec with WithFakeApplication {
       clamAvConfig.port shouldBe 3310
       clamAvConfig.timeout shouldBe 5000
       clamAvConfig.threadPoolSize shouldBe 20
+      clamAvConfig.maxLength shouldBe 10485760
     }
 
     "load the ClamConfig default disabled values when enabled is set to false" in {
@@ -53,6 +54,8 @@ class LoadClamAvConfigSpec extends UnitSpec with WithFakeApplication {
       clamAvConfig.port shouldBe 3310
       clamAvConfig.timeout shouldBe 0
       clamAvConfig.threadPoolSize shouldBe 0
+      clamAvConfig.maxLength shouldBe 0
+
     }
 
     "load the ClamConfig default disabled values when enabled is missing in config" in {
@@ -63,6 +66,7 @@ class LoadClamAvConfigSpec extends UnitSpec with WithFakeApplication {
       clamAvConfig.port shouldBe 3310
       clamAvConfig.timeout shouldBe 0
       clamAvConfig.threadPoolSize shouldBe 0
+      clamAvConfig.maxLength shouldBe 0
     }
 
     "throw and exception if there is no clam config setup " in {
