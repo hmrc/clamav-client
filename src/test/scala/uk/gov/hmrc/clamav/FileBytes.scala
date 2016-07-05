@@ -16,18 +16,12 @@
 
 package uk.gov.hmrc.clamav
 
+import java.io.InputStream
+
 object FileBytes {
-
   def apply(filename: String) = {
-    val stream = getClass.getResourceAsStream(filename)
-
-    if (stream == null)
-      throw new Exception("Could not open stream to: " + filename)
-
-    Iterator.continually(stream.read)
-      .takeWhile(_ != -1)
-      .take(1000)
-      .map(_.toByte)
-      .toArray
+    read(Option(getClass.getResourceAsStream(filename)).orElse(throw new Exception(s"Could not open stream to: $filename")).get)
   }
+
+  def read(stream: InputStream) = Iterator.continually(stream.read).takeWhile(_ != -1).take(1000).map(_.toByte).toArray
 }

@@ -17,9 +17,10 @@
 package uk.gov.hmrc.clamav
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 trait VirusChecker extends Streamer {
-  def checkForVirus()(implicit ec : ExecutionContext): Future[Unit] = finish
+  def checkForVirus()(implicit ec : ExecutionContext): Future[Try[Boolean]] = finish
 }
 
 class VirusDetectedException(val virusInformation: String) extends Exception(s"Virus detected: $virusInformation")

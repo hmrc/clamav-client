@@ -16,48 +16,38 @@
 
 package uk.gov.hmrc.clamav.config
 
-import play.api.{Configuration, Logger}
+import play.api.Configuration
 
-case class ClamAvConfig(enabled : Boolean,
-                        chunkSize : Int,
-                        host : String,
-                        port : Int,
-                        timeout : Int,
-                        threadPoolSize : Int,
-                        maxLength : Int) {
+trait ClamAvConfig {
+  val chunkSize: Int = 0
+  val host: String = ""
+  val port: Int = 0
+  val timeout: Int = 0
+  val threadPoolSize: Int = 0
+  val maxLength: Int = 0
+}
 
+case class EnabledConfig(override val chunkSize: Int = 32768,
+                         override val host: String = "localhost",
+                         override val port: Int = 3310,
+                         override val timeout: Int = 5000,
+                         override val threadPoolSize: Int = 20,
+                         override val maxLength: Int = 10485760) extends ClamAvConfig
+
+case object DisabledConfig extends ClamAvConfig
+
+object ClamAvConfig {
   val instream = "zINSTREAM\u0000"
   val ping = "zPING\u0000"
   val status = "nSTATS\n"
-
-  val okClamAvResponse = "stream: OK"
-
-}
-
-trait ClamAvSocket {
-
-  def openSocket(implicit clamAvConfig: ClamAvConfig) = {
-    import java.net.{InetSocketAddress, Socket}
-    val sock = new Socket
-    sock.setSoTimeout(clamAvConfig.timeout)
-    val address: InetSocketAddress = new InetSocketAddress(clamAvConfig.host, clamAvConfig.port)
-    Logger.debug(s"Attempting connection to : $address")
-    sock.connect(address)
-    sock
-  }
-
-}
-
-
-object LoadClamAvConfig {
+  val okClamAvResponse = "stream: OK\u0000"
 
   def apply(configuration: Option[Configuration]): ClamAvConfig = {
     configuration.map { c =>
       val enabled = c.getBoolean("enabled").getOrElse(false)
 
-      if(enabled) {
-        ClamAvConfig(
-          enabled = enabled,
+      if (enabled) {
+        EnabledConfig(
           chunkSize = c.getInt("chunkSize").getOrElse(32768),
           host = c.getString("host").getOrElse("localhost"),
           port = c.getInt("port").getOrElse(3310),
@@ -66,10 +56,9 @@ object LoadClamAvConfig {
           maxLength = c.getInt("maxLength").getOrElse(10485760)
         )
       } else {
-        ClamAvConfig(enabled = false, chunkSize = 0, host = "", port = 3310, timeout = 0, threadPoolSize = 0, maxLength = 0 )
+        DisabledConfig
       }
 
     }
   }.getOrElse(throw new Exception("Missing clamav configuration"))
-
 }

@@ -19,71 +19,81 @@ package uk.gov.hmrc.clamav
 import java.io._
 
 import play.api.Logger
-import uk.gov.hmrc.clamav.config.{ClamAvSocket, ClamAvConfig}
+import uk.gov.hmrc.clamav.config.ClamAvConfig
+import uk.gov.hmrc.clamav.config.ClamAvConfig._
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
-// This is a fork of https://github.com/davidillsley/gds-clamav-scala/tree/531562368a438eafc1fcbfa07cc63c184d369fa9
 trait ClamAvResponseInterpreter {
-
-  def interpretResponseFromClamd(responseFromClamd: Option[String])(implicit clamAvConfig: ClamAvConfig): Unit = {
+  def interpretResponseFromClamd(responseFromClamd: Option[String])(implicit clamAvConfig: ClamAvConfig): Try[Boolean] = {
     responseFromClamd match {
-      case Some(clamAvConfig.okClamAvResponse) =>
+      case Some(`okClamAvResponse`) =>
         Logger.info("File clean")
-      case None =>
-        Logger.warn("Empty response from clamd")
-        throw new VirusScannerFailureException("Empty response from clamd")
+        Success(true)
       case Some(responseString) =>
         Logger.warn(s"Virus detected : $responseString")
-        throw new VirusDetectedException(responseString)
+        Failure(new VirusDetectedException(responseString))
+      case None =>
+        Logger.warn("Empty response from clamd")
+        Failure(new VirusScannerFailureException("Empty response from clamd"))
     }
   }
 }
 
+trait ClamAvSocket {
+  val config: ClamAvConfig
+
+  lazy val socket = openSocket()
+
+  lazy val toClam = {
+    val ds = new DataOutputStream(socket.getOutputStream)
+    ds.write(instream.getBytes())
+    ds
+  }
+
+  lazy val fromClam = socket.getInputStream
+
+  def openSocket() = {
+    import java.net.{InetSocketAddress, Socket}
+    val sock = new Socket
+    sock.setSoTimeout(config.timeout)
+    val address: InetSocketAddress = new InetSocketAddress(config.host, config.port)
+    Logger.debug(s"Attempting connection to : $address")
+    sock.connect(address)
+    sock
+  }
+}
 
 class ClamAntiVirus()(implicit clamAvConfig: ClamAvConfig) extends ClamAvResponseInterpreter with VirusChecker with ClamAvSocket {
+  override val config: ClamAvConfig = clamAvConfig
 
-  private val socket = openSocket
-  private val toClam = new DataOutputStream(socket.getOutputStream)
-  private lazy val fromClam = socket.getInputStream
-
-  toClam.write(clamAvConfig.instream.getBytes())
-
-  override def send(bytes: Array[Byte])(implicit ec : ExecutionContext): Future[Unit] = {
-    Future{
-      toClam.writeInt(bytes.length)
-      toClam.write(bytes)
-      toClam.flush()
-    }
+  override def send(bytes: Array[Byte])(implicit ec: ExecutionContext): Future[Unit] = {
+    for {
+      _ <- Future(toClam.writeInt(bytes.length))
+      _ <- Future(toClam.write(bytes))
+      _ <- Future(toClam.flush())
+    } yield ()
   }
 
-  override def finish()(implicit ec : ExecutionContext): Future[Unit] = {
-    Future {
-      try {
-        toClam.writeInt(0)
-        toClam.flush()
-
-        interpretResponseFromClamd(responseFromClamd())
-      }
-      finally {
-        terminate()
-      }
-    }
+  override def finish()(implicit ec: ExecutionContext): Future[Try[Boolean]] = {
+    for {
+      _ <- Future(toClam.writeInt(0))
+      _ <- Future(toClam.flush())
+      r <- Future(interpretResponseFromClamd(responseFromClamd()))
+      _ <- Future(terminate())
+    } yield r
   }
 
-  private [clamav] def terminate() = {
-    try {
-      socket.close()
-    } catch {
-      case e: IOException =>
-        Logger.warn("Error closing socket to clamd", e)
-    }
+  private[clamav] def terminate() = {
+    val r = for {
+      _ <- Try(socket.close())
+      r <- Try(toClam.close())
+    } yield r
 
-    try {
-      toClam.close()
-    } catch {
-      case e: IOException =>
-        Logger.warn("Error closing socket to clamd", e)
+    r match {
+      case Success(_) => ()
+      case Failure(e) => Logger.warn("Error closing socket to clamd", e)
     }
   }
 
@@ -95,11 +105,9 @@ class ClamAntiVirus()(implicit clamAvConfig: ClamAvConfig) extends ClamAvRespons
         .toArray)
 
     Logger.info(s"Response from clamd: $response")
-    emptyToNone(response.trim)
+    emptyToNone(response)
   }
 
-  def emptyToNone(s: String): Option[String] = {
-    if (s.isEmpty) None else Some(s)
-  }
+  def emptyToNone(s: String): Option[String] = if (s.trim.isEmpty) None else Some(s)
 }
 

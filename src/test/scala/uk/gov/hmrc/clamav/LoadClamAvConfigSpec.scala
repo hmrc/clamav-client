@@ -17,7 +17,7 @@
 package uk.gov.hmrc.clamav
 
 import play.api.Configuration
-import uk.gov.hmrc.clamav.config.LoadClamAvConfig
+import uk.gov.hmrc.clamav.config.{ClamAvConfig, DisabledConfig, EnabledConfig}
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
 class LoadClamAvConfigSpec extends UnitSpec with WithFakeApplication {
@@ -36,9 +36,9 @@ class LoadClamAvConfigSpec extends UnitSpec with WithFakeApplication {
 
   "Test the LoadClamAvConfig" should {
     "load the ClamConfig from the play application config if present" in {
-      val clamAvConfig = LoadClamAvConfig(configuration = configuration(true))
+      val clamAvConfig = ClamAvConfig(configuration = configuration(true))
       clamAvConfig.chunkSize shouldBe 32768
-      clamAvConfig.enabled shouldBe true
+      clamAvConfig shouldBe a [EnabledConfig]
       clamAvConfig.host shouldBe "avscan"
       clamAvConfig.port shouldBe 3310
       clamAvConfig.timeout shouldBe 5000
@@ -47,11 +47,11 @@ class LoadClamAvConfigSpec extends UnitSpec with WithFakeApplication {
     }
 
     "load the ClamConfig default disabled values when enabled is set to false" in {
-      val clamAvConfig = LoadClamAvConfig(configuration = configuration(false))
+      val clamAvConfig = ClamAvConfig(configuration = configuration(false))
       clamAvConfig.chunkSize shouldBe 0
-      clamAvConfig.enabled shouldBe false
+      clamAvConfig shouldBe DisabledConfig
       clamAvConfig.host shouldBe ""
-      clamAvConfig.port shouldBe 3310
+      clamAvConfig.port shouldBe 0
       clamAvConfig.timeout shouldBe 0
       clamAvConfig.threadPoolSize shouldBe 0
       clamAvConfig.maxLength shouldBe 0
@@ -59,11 +59,11 @@ class LoadClamAvConfigSpec extends UnitSpec with WithFakeApplication {
     }
 
     "load the ClamConfig default disabled values when enabled is missing in config" in {
-      val clamAvConfig = LoadClamAvConfig(configuration = badConfiguration)
+      val clamAvConfig = ClamAvConfig(configuration = badConfiguration())
       clamAvConfig.chunkSize shouldBe 0
-      clamAvConfig.enabled shouldBe false
+      clamAvConfig shouldBe DisabledConfig
       clamAvConfig.host shouldBe ""
-      clamAvConfig.port shouldBe 3310
+      clamAvConfig.port shouldBe 0
       clamAvConfig.timeout shouldBe 0
       clamAvConfig.threadPoolSize shouldBe 0
       clamAvConfig.maxLength shouldBe 0
@@ -71,7 +71,7 @@ class LoadClamAvConfigSpec extends UnitSpec with WithFakeApplication {
 
     "throw and exception if there is no clam config setup " in {
       intercept[Exception] {
-        LoadClamAvConfig(configuration = None)
+        ClamAvConfig(configuration = None)
       }
     }
   }

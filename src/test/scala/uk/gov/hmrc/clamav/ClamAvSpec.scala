@@ -16,8 +16,10 @@
 
 package uk.gov.hmrc.clamav
 
-import uk.gov.hmrc.clamav.config.ClamAvConfig
+import uk.gov.hmrc.clamav.config.EnabledConfig
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
+
+import scala.util.{Failure, Success}
 
 class ClamAvSpec extends UnitSpec with WithFakeApplication {
 
@@ -28,7 +30,7 @@ class ClamAvSpec extends UnitSpec with WithFakeApplication {
   private val cleanFile = "/162000101.pdf"
 
   def instance(): ClamAntiVirus = {
-    val clamAvConfig = ClamAvConfig(true, 33769, "avscan", 3310, 5000, 29, 10485760)
+    val clamAvConfig = EnabledConfig(33769, "avscan", 3310, 5000, 29, 10485760)
     new ClamAntiVirus()(clamAvConfig)
   }
 
@@ -37,70 +39,42 @@ class ClamAvSpec extends UnitSpec with WithFakeApplication {
       val clamAv = instance()
       val bytes = FileBytes(cleanFile)
 
-      try {
-        await(clamAv.send(bytes))
-        await(clamAv.checkForVirus())
-      }
-      finally {
-        clamAv.terminate()
-      }
+      await(clamAv.send(bytes))
+      await(clamAv.checkForVirus()) shouldBe Success(true)
     }
 
     "detect a virus in a file" in {
       val clamAv = instance()
       val bytes = FileBytes(virusFileWithSig)
 
-      try {
-        intercept[VirusDetectedException] {
-          await(clamAv.send(bytes))
-          await(clamAv.checkForVirus())
-        }
-      }
-      finally {
-        clamAv.terminate()
-      }
+      await(clamAv.send(bytes))
+      await(clamAv.checkForVirus()) shouldBe Failure(_:VirusDetectedException)
     }
   }
 
 
   "Can scan stream without virus" in {
-
     val clamAv = instance()
 
-    try {
-      await(clamAv.send(getBytes(payloadSize = 10000)))
-      await(clamAv.checkForVirus())
-    }
-    finally {
-      clamAv.terminate()
-    }
+    await(clamAv.send(getBytes(payloadSize = 10000)))
+    await(clamAv.checkForVirus()) shouldBe Success(true)
   }
 
   "Can stream multiple clean blocks to clam" in {
     val clamAv = instance()
 
-    try {
-      await(clamAv.send(getBytes(payloadSize = 1000)))
-      await(clamAv.send(getBytes(payloadSize = 1000)))
-      await(clamAv.checkForVirus())
-    }
-    finally {
-      clamAv.terminate()
-    }
+    await(clamAv.send(getBytes(payloadSize = 1000)))
+    await(clamAv.send(getBytes(payloadSize = 1000)))
+    await(clamAv.checkForVirus()) shouldBe Success(true)
   }
 
   "Can detect a small stream with a virus at the beginning" in {
     val clamAv = instance()
 
-    try {
-      intercept[VirusDetectedException] {
-        await(clamAv.send(getBytes(shouldInsertVirusAtPosition = Some(0))))
-        await(clamAv.checkForVirus())
-      }
-    }
-    finally {
-      clamAv.terminate()
-    }
+    await(clamAv.send(getBytes(shouldInsertVirusAtPosition = Some(0))))
+    val r = await(clamAv.checkForVirus())
+
+    r shouldBe Failure(_:VirusDetectedException)
   }
 
   "emptyToNone" should {

@@ -16,31 +16,28 @@
 
 package uk.gov.hmrc.clamav
 
-import uk.gov.hmrc.clamav.config.ClamAvConfig
+import uk.gov.hmrc.clamav.config.{ClamAvConfig, EnabledConfig}
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
+
+import scala.util.{Failure, Success}
 
 class ClamAvResponseInterpreterSpec extends UnitSpec with WithFakeApplication {
   val interpreter = new ClamAvResponseInterpreter {}
 
-  val clamAvConfig = new ClamAvConfig(true, 33769, "avscan", 3310, 5000, 29, 10485760)
+  val clamAvConfig = EnabledConfig(33769, "avscan", 3310, 5000, 29, 10485760)
 
   "Interpreting responses from ClamAV" should {
-    "return without exception on an OK response" in {
-      interpreter.interpretResponseFromClamd(Some("stream: OK"))(clamAvConfig)
+    "return Success(true) on an OK response" in {
+      interpreter.interpretResponseFromClamd(Some("stream: OK\u0000"))(clamAvConfig) shouldBe Success(true)
     }
 
-    "throw a VirusDetectedException on a FOUND response" in {
-      intercept[VirusDetectedException] {
-        interpreter.interpretResponseFromClamd(Some("stream: Eicar-Test-Signature FOUND"))(clamAvConfig)
-      }
+    "throw a Failure(_:VirusDetectedException) on a FOUND response" in {
+      interpreter.interpretResponseFromClamd(Some("stream: Eicar-Test-Signature FOUND"))(clamAvConfig) shouldBe Failure(_:VirusDetectedException)
     }
 
-    "throw a ClamAvFailedException on an empty response" in {
-      intercept[VirusScannerFailureException] {
-        // we have observed that when clamav fails under high load we get an
-        // empty response
-        interpreter.interpretResponseFromClamd(None)(clamAvConfig)
-      }
+    "return a Failure(_:ClamAvFailedException) on an empty response" in {
+      // we have observed that when clamav fails under high load we get an empty response
+      interpreter.interpretResponseFromClamd(None)(clamAvConfig) shouldBe Failure(_:VirusScannerFailureException)
     }
   }
 }

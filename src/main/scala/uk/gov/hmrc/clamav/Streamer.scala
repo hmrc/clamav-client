@@ -17,8 +17,9 @@
 package uk.gov.hmrc.clamav
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 trait Streamer {
   def send(bytes: Array[Byte])(implicit ec : ExecutionContext): Future[Unit]
-  def finish()(implicit ec : ExecutionContext): Future[Unit]
+  def finish()(implicit ec : ExecutionContext): Future[Try[Boolean]]
 }
