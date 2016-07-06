@@ -69,17 +69,16 @@ class ClamAntiVirus()(implicit clamAvConfig: ClamAvConfig) extends ClamAvRespons
   override val config: ClamAvConfig = clamAvConfig
 
   override def send(bytes: Array[Byte])(implicit ec: ExecutionContext): Future[Unit] = {
-    for {
-      _ <- Future(toClam.writeInt(bytes.length))
-      _ <- Future(toClam.write(bytes))
-      _ <- Future(toClam.flush())
-    } yield ()
+    Future {
+      toClam.writeInt(bytes.length)
+      toClam.write(bytes)
+      toClam.flush()
+    }
   }
 
   override def finish()(implicit ec: ExecutionContext): Future[Try[Boolean]] = {
     for {
-      _ <- Future(toClam.writeInt(0))
-      _ <- Future(toClam.flush())
+      _ <- Future { toClam.writeInt(0); toClam.flush() }
       r <- Future(interpretResponseFromClamd(responseFromClamd()))
       _ <- Future(terminate())
     } yield r
