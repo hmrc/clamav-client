@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.clamav
 
-import uk.gov.hmrc.clamav.config.EnabledConfig
+import uk.gov.hmrc.clamav.config.ClamAvConfig.EnabledConfig
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
 import scala.util.{Failure, Success}
@@ -30,8 +30,7 @@ class ClamAvSpec extends UnitSpec with WithFakeApplication {
   private val cleanFile = "/162000101.pdf"
 
   def instance(): ClamAntiVirus = {
-    val clamAvConfig = EnabledConfig(33769, "avscan", 3310, 5000, 29, 10485760)
-    new ClamAntiVirus()(clamAvConfig)
+    ClamAntiVirus(EnabledConfig(33769, "avscan", 3310, 5000, 29, 10485760))
   }
 
   "Scanning files" should {
@@ -80,12 +79,12 @@ class ClamAvSpec extends UnitSpec with WithFakeApplication {
   "emptyToNone" should {
     "convert an empty response to None" in {
       val clamAv = instance()
-      clamAv.emptyToNone("") shouldBe None
+      clamAv.noneIfEmpty("") shouldBe None
     }
 
     "convert a non-empty response to Some(response)" in {
       val clamAv = instance()
-      clamAv.emptyToNone("Something") shouldBe Some("Something")
+      clamAv.noneIfEmpty("Something") shouldBe Some("Something")
     }
   }
 

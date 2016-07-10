@@ -26,23 +26,23 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 trait ClamAvResponseInterpreter {
-  def interpretResponseFromClamd(responseFromClamd: Option[String])(implicit clamAvConfig: ClamAvConfig): Try[Boolean] = {
-    responseFromClamd match {
-      case Some(`okClamAvResponse`) =>
-        Logger.info("File clean")
-        Success(true)
-      case Some(responseString) =>
-        Logger.warn(s"Virus detected : $responseString")
-        Failure(new VirusDetectedException(responseString))
-      case None =>
-        Logger.warn("Empty response from clamd")
-        Failure(new VirusScannerFailureException("Empty response from clamd"))
-    }
+  def interpretResponseFromClamd: PartialFunction[String, Try[Boolean]] = {
+    case `okClamAvResponse` =>
+      Logger.info("File clean")
+      Success(true)
+    case responseString =>
+      Logger.warn(s"Virus detected : $responseString")
+      Failure(new VirusDetectedException(responseString))
+  }
+
+  def invaldResponse = {
+    Logger.warn("Empty response from clamd")
+    Failure(new VirusScannerFailureException("Empty response from clamd"))
   }
 }
 
 trait ClamAvSocket {
-  val config: ClamAvConfig
+  val config: Config
 
   lazy val socket = openSocket()
 
@@ -65,8 +65,8 @@ trait ClamAvSocket {
   }
 }
 
-class ClamAntiVirus()(implicit clamAvConfig: ClamAvConfig) extends ClamAvResponseInterpreter with VirusChecker with ClamAvSocket {
-  override val config: ClamAvConfig = clamAvConfig
+case class ClamAntiVirus(clamAvConfig: Config) extends ClamAvResponseInterpreter with VirusChecker with ClamAvSocket {
+  override val config: Config = clamAvConfig
 
   override def send(bytes: Array[Byte])(implicit ec: ExecutionContext): Future[Unit] = {
     Future {
@@ -78,35 +78,40 @@ class ClamAntiVirus()(implicit clamAvConfig: ClamAvConfig) extends ClamAvRespons
 
   override def finish()(implicit ec: ExecutionContext): Future[Try[Boolean]] = {
     for {
-      _ <- Future { toClam.writeInt(0); toClam.flush() }
-      r <- Future(interpretResponseFromClamd(responseFromClamd()))
+      result <- Future {
+        toClam.writeInt(0)
+        toClam.flush()
+        responseFromClamd map interpretResponseFromClamd getOrElse invaldResponse
+      }
       _ <- Future(terminate())
-    } yield r
+    } yield result
   }
 
   private[clamav] def terminate() = {
-    val r = for {
-      _ <- Try(socket.close())
-      r <- Try(toClam.close())
-    } yield r
-
-    r match {
-      case Success(_) => ()
-      case Failure(e) => Logger.warn("Error closing socket to clamd", e)
-    }
+    Try {
+      socket.close()
+      toClam.close()
+    } recover logWarning("Error closing socket to clamd")
   }
 
   private def responseFromClamd(): Option[String] = {
-    val response = new String(
+    val response = Option(new String(
       Iterator.continually(fromClam.read)
         .takeWhile(_ != -1)
         .map(_.toByte)
-        .toArray)
+        .toArray))
 
     Logger.info(s"Response from clamd: $response")
-    emptyToNone(response)
+    response flatMap noneIfEmpty
   }
 
-  def emptyToNone(s: String): Option[String] = if (s.trim.isEmpty) None else Some(s)
+  private def logWarning(msg: String): PartialFunction[Throwable, Unit] = {
+    case e => Logger.warn(msg, e)
+  }
+
+  def noneIfEmpty: PartialFunction[String, Option[String]] = {
+    case s if s.trim.isEmpty || s == null => None
+    case s => Some(s)
+  }
 }
 

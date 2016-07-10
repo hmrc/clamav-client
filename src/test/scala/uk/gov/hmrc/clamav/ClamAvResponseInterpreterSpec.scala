@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.clamav
 
-import uk.gov.hmrc.clamav.config.{ClamAvConfig, EnabledConfig}
+import uk.gov.hmrc.clamav.config.ClamAvConfig.EnabledConfig
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
 import scala.util.{Failure, Success}
@@ -28,16 +28,15 @@ class ClamAvResponseInterpreterSpec extends UnitSpec with WithFakeApplication {
 
   "Interpreting responses from ClamAV" should {
     "return Success(true) on an OK response" in {
-      interpreter.interpretResponseFromClamd(Some("stream: OK\u0000"))(clamAvConfig) shouldBe Success(true)
+      interpreter.interpretResponseFromClamd("stream: OK\u0000") shouldBe Success(true)
     }
 
     "throw a Failure(_:VirusDetectedException) on a FOUND response" in {
-      interpreter.interpretResponseFromClamd(Some("stream: Eicar-Test-Signature FOUND"))(clamAvConfig) shouldBe Failure(_:VirusDetectedException)
+      interpreter.interpretResponseFromClamd("stream: Eicar-Test-Signature FOUND") shouldBe Failure(_:VirusDetectedException)
     }
 
     "return a Failure(_:ClamAvFailedException) on an empty response" in {
-      // we have observed that when clamav fails under high load we get an empty response
-      interpreter.interpretResponseFromClamd(None)(clamAvConfig) shouldBe Failure(_:VirusScannerFailureException)
+      interpreter.invaldResponse shouldBe Failure(_:VirusScannerFailureException)
     }
   }
 }

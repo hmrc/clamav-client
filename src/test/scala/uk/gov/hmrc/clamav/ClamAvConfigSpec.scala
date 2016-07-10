@@ -17,10 +17,11 @@
 package uk.gov.hmrc.clamav
 
 import play.api.Configuration
-import uk.gov.hmrc.clamav.config.{ClamAvConfig, DisabledConfig, EnabledConfig}
+import uk.gov.hmrc.clamav.config.ClamAvConfig
+import uk.gov.hmrc.clamav.config.ClamAvConfig.{DisabledConfig, EnabledConfig}
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
-class LoadClamAvConfigSpec extends UnitSpec with WithFakeApplication {
+class ClamAvConfigSpec extends UnitSpec with WithFakeApplication {
 
   def configuration(enabled: Boolean): Option[Configuration] = {
     Option(Configuration.from(
@@ -38,7 +39,7 @@ class LoadClamAvConfigSpec extends UnitSpec with WithFakeApplication {
     "load the ClamConfig from the play application config if present" in {
       val clamAvConfig = ClamAvConfig(configuration = configuration(true))
       clamAvConfig.chunkSize shouldBe 32768
-      clamAvConfig shouldBe a [EnabledConfig]
+      clamAvConfig shouldBe an [EnabledConfig]
       clamAvConfig.host shouldBe "avscan"
       clamAvConfig.port shouldBe 3310
       clamAvConfig.timeout shouldBe 5000
