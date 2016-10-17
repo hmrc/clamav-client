@@ -19,13 +19,14 @@ package uk.gov.hmrc.clamav
 import java.io._
 
 import play.api.Logger
+import uk.gov.hmrc.clamav.ClamAntiVirus._
 import uk.gov.hmrc.clamav.config.ClamAvConfig
-import uk.gov.hmrc.clamav.config.ClamAvConfig._
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 trait ClamAvResponseInterpreter {
+
   def interpretResponseFromClamd: PartialFunction[String, Try[Boolean]] = {
     case `okClamAvResponse` =>
       Logger.info("File clean")
@@ -42,7 +43,7 @@ trait ClamAvResponseInterpreter {
 }
 
 trait ClamAvSocket {
-  val config: Config
+  val config: ClamAvConfig
 
   lazy val socket = openSocket()
 
@@ -65,8 +66,8 @@ trait ClamAvSocket {
   }
 }
 
-case class ClamAntiVirus(clamAvConfig: Config) extends ClamAvResponseInterpreter with VirusChecker with ClamAvSocket {
-  override val config: Config = clamAvConfig
+case class ClamAntiVirus(clamAvConfig: ClamAvConfig) extends ClamAvResponseInterpreter with VirusChecker with ClamAvSocket {
+  override val config: ClamAvConfig = clamAvConfig
 
   override def send(bytes: Array[Byte])(implicit ec: ExecutionContext): Future[Unit] = {
     Future {
@@ -115,3 +116,9 @@ case class ClamAntiVirus(clamAvConfig: Config) extends ClamAvResponseInterpreter
   }
 }
 
+object ClamAntiVirus {
+  val instream = "zINSTREAM\u0000"
+  val ping = "zPING\u0000"
+  val status = "nSTATS\n"
+  val okClamAvResponse = "stream: OK\u0000"
+}

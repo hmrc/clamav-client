@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.clamav
 
-import uk.gov.hmrc.clamav.config.ClamAvConfig.EnabledConfig
+import uk.gov.hmrc.clamav.config.ClamAvConfig
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
 import scala.util.{Failure, Success}
@@ -24,7 +24,7 @@ import scala.util.{Failure, Success}
 class ClamAvResponseInterpreterSpec extends UnitSpec with WithFakeApplication {
   val interpreter = new ClamAvResponseInterpreter {}
 
-  val clamAvConfig = EnabledConfig(33769, "avscan", 3310, 5000, 29, 10485760)
+  val clamAvConfig = ClamAvConfig(33769, "avscan", 3310, 5000, 29, 10485760)
 
   "Interpreting responses from ClamAV" should {
     "return Success(true) on an OK response" in {

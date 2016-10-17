@@ -39,6 +39,8 @@ object HmrcBuild extends Build {
     )
   }
 
+  def itFilter(name: String): Boolean = ! (name endsWith "ISpec")
+
   lazy val microservice = Project(appName, file("."))
     .enablePlugins(SbtAutoBuildPlugin, SbtGitVersioning)
     .settings(
@@ -46,6 +48,7 @@ object HmrcBuild extends Build {
       targetJvm := "jvm-1.8",
       scalaVersion := "2.11.8",
       libraryDependencies ++= AppDependencies(),
+      testOptions in Test := Seq(Tests.Filter(itFilter)),
       resolvers := Seq(
           Resolver.bintrayRepo("hmrc", "releases"),
           "typesafe-releases" at "http://repo.typesafe.com/typesafe/releases/"

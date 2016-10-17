@@ -16,12 +16,12 @@
 
 package uk.gov.hmrc.clamav
 
-import uk.gov.hmrc.clamav.config.ClamAvConfig.EnabledConfig
+import uk.gov.hmrc.clamav.config.ClamAvConfig
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
 import scala.util.{Failure, Success}
 
-class ClamAvSpec extends UnitSpec with WithFakeApplication {
+class ClamAvISpec extends UnitSpec with WithFakeApplication {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -30,7 +30,7 @@ class ClamAvSpec extends UnitSpec with WithFakeApplication {
   private val cleanFile = "/162000101.pdf"
 
   def instance(): ClamAntiVirus = {
-    ClamAntiVirus(EnabledConfig(33769, "avscan", 3310, 5000, 29, 10485760))
+    ClamAntiVirus(ClamAvConfig(33769, "avscan", 3310, 5000, 29, 10485760))
   }
 
   "Scanning files" should {

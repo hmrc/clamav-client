@@ -18,7 +18,6 @@ package uk.gov.hmrc.clamav
 
 import play.api.Configuration
 import uk.gov.hmrc.clamav.config.ClamAvConfig
-import uk.gov.hmrc.clamav.config.ClamAvConfig.{DisabledConfig, EnabledConfig}
 import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
 
 class ClamAvConfigSpec extends UnitSpec with WithFakeApplication {
@@ -39,35 +38,11 @@ class ClamAvConfigSpec extends UnitSpec with WithFakeApplication {
     "load the ClamConfig from the play application config if present" in {
       val clamAvConfig = ClamAvConfig(configuration = configuration(true))
       clamAvConfig.chunkSize shouldBe 32768
-      clamAvConfig shouldBe an [EnabledConfig]
       clamAvConfig.host shouldBe "avscan"
       clamAvConfig.port shouldBe 3310
       clamAvConfig.timeout shouldBe 5000
       clamAvConfig.threadPoolSize shouldBe 20
       clamAvConfig.maxLength shouldBe 10485760
-    }
-
-    "load the ClamConfig default disabled values when enabled is set to false" in {
-      val clamAvConfig = ClamAvConfig(configuration = configuration(false))
-      clamAvConfig.chunkSize shouldBe 0
-      clamAvConfig shouldBe DisabledConfig
-      clamAvConfig.host shouldBe ""
-      clamAvConfig.port shouldBe 0
-      clamAvConfig.timeout shouldBe 0
-      clamAvConfig.threadPoolSize shouldBe 0
-      clamAvConfig.maxLength shouldBe 0
-
-    }
-
-    "load the ClamConfig default disabled values when enabled is missing in config" in {
-      val clamAvConfig = ClamAvConfig(configuration = badConfiguration())
-      clamAvConfig.chunkSize shouldBe 0
-      clamAvConfig shouldBe DisabledConfig
-      clamAvConfig.host shouldBe ""
-      clamAvConfig.port shouldBe 0
-      clamAvConfig.timeout shouldBe 0
-      clamAvConfig.threadPoolSize shouldBe 0
-      clamAvConfig.maxLength shouldBe 0
     }
 
     "throw and exception if there is no clam config setup " in {
