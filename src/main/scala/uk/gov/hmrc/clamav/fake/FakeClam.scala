@@ -70,7 +70,7 @@ class FakeClam(serverSocket: ServerSocket)(implicit executionContext: ExecutionC
 
 object FakeClam {
 
-  def apply(port: Int): FakeClam = {
+  def apply(port: Int)(implicit executionContext: ExecutionContext): FakeClam = {
     new FakeClam(new ServerSocket(port))
   }
 }
