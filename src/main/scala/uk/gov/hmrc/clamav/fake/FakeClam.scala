@@ -52,15 +52,9 @@ class FakeClam(serverSocket: ServerSocket)(implicit executionContext: ExecutionC
   }
 }
 
-object FakeClam extends App {
+object FakeClam {
 
-  implicit val ec = ExecutionContext.global
-
-  val serverSocket = new ServerSocket(3310)
-  val fakeClam = new FakeClam(serverSocket)
-  try {
-    fakeClam.start().wait()
-  } catch {
-    case _: InterruptedException => fakeClam.stop()
+  def apply(port: Int): ServerSocket = {
+    new FakeClam(new ServerSocket(port))
   }
 }
