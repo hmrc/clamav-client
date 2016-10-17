@@ -26,7 +26,7 @@ class FakeClam(serverSocket: ServerSocket)(implicit executionContext: ExecutionC
           outputStream.close()
           socket.close()
         } catch {
-          case _ :IOException => Logger.debug("IOExeption reading from the socket")
+          case _ :IOException => Logger.debug("IOException reading from the socket")
         }
       }
     }
