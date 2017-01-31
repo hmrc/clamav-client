@@ -11,11 +11,16 @@ For Macs
 
 ```brew install clamav```
 
-You can find a slightly longer explaination [here](https://gist.github.com/paulspringett/8802240)
+You can find a slightly longer explaination [here](https://gist.github.com/zhurui1008/4fdc875e557014c3a34e) but make note of the comments as the instructions contain some issues.
 
 You will also need to add the following alias to your /etc/hosts
 
 ```127.0.0.1       avscan```
+
+Make sure clamd.conf has
+
+```LocalSocket /usr/local/var/run/clamav/clamd.sock```
+```TCPSocket 3310```
 
 ## Configuring your MicroService
 
