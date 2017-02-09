@@ -5,9 +5,9 @@
 
 ## Local Installation
 
-This requires [ClamAV](http://www.clamav.net/) to be installed
+This requires [ClamAV](http://www.clamav.net/) to be installed the best way to do this is run the [docker-clamav image](https://hub.docker.com/r/mkodockx/docker-clamav). Alternatively use the manual instructions below.
 
-For Macs
+### For Macs
 
 ```brew install clamav```
 
