@@ -17,13 +17,13 @@ If you are using the docker image and using Docker Machine on Mac then the host 
 
 ```DOCKER_IP       avscan```
 
-## Configuring your MicroService
-
 ### Manual installation on Mac OS with Brew
 
 ```brew install clamav```
 
 You can find a slightly longer explaination [here](https://gist.github.com/zhurui1008/4fdc875e557014c3a34e) but make note of the comments as the instructions contain some issues.
+
+## Configuring your MicroService
 
 Make sure clamd.conf has
 
