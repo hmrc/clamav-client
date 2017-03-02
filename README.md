@@ -7,27 +7,31 @@
 
 This requires [ClamAV](http://www.clamav.net/) to be installed the best way to do this is run the [docker-clamav image](https://hub.docker.com/r/mkodockx/docker-clamav). Alternatively use the manual instructions below.
 
-### For Macs
+### Configuring hosts file
+
+If you have installed ClamAV manually or are using the Docker image with a native docker installation then add this to your /etc/hosts file.
+
+```127.0.0.1       avscan```
+
+If you are using the docker image and using Docker Machine on Mac then the host IP should be the IP of your Docker Machine IP.
+
+```DOCKER_IP       avscan```
+
+## Configuring your MicroService
+
+### Manual installation on Mac OS with Brew
 
 ```brew install clamav```
 
 You can find a slightly longer explaination [here](https://gist.github.com/zhurui1008/4fdc875e557014c3a34e) but make note of the comments as the instructions contain some issues.
-
-You will also need to add the following alias to your /etc/hosts
-
-```127.0.0.1       avscan```
 
 Make sure clamd.conf has
 
 ```LocalSocket /usr/local/var/run/clamav/clamd.sock```
 ```TCPSocket 3310```
 
-## Configuring your MicroService
-
 ###### To use clamav-client 
 Add the latest released version of the clamav-client to your app dependencies of your micro service build
-
-
 
 e.g. ```"uk.gov.hmrc" %% "clamav-client" % "```[```version```](https://bintray.com/hmrc/releases/clamav-client/_latestVersion)```"```
 
