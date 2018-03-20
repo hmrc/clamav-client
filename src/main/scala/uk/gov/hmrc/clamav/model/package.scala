@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,8 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.clamav
+package uk.gov.hmrc.clamav.model
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
+class VirusDetectedException(val virusInformation: String) extends Exception(s"Virus detected: $virusInformation")
 
-trait Streamer {
-  def send(bytes: Array[Byte])(implicit ec : ExecutionContext): Future[Unit]
-  def finish()(implicit ec : ExecutionContext): Future[Try[Boolean]]
-}
+class VirusScannerFailureException(val message: String) extends Exception(message)

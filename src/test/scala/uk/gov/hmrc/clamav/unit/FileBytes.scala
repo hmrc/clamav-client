@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.clamav
+package uk.gov.hmrc.clamav.unit
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
+import java.io.InputStream
 
-trait VirusChecker extends Streamer {
-  def checkForVirus()(implicit ec : ExecutionContext): Future[Try[Boolean]] = finish
+object FileBytes {
+  def apply(filename: String) = {
+    read(Option(getClass.getResourceAsStream(filename)).orElse(throw new Exception(s"Could not open stream to: $filename")).get)
+  }
+
+  def read(stream: InputStream) = Iterator.continually(stream.read).takeWhile(_ != -1).take(1000).map(_.toByte).toArray
 }
-
-class VirusDetectedException(val virusInformation: String) extends Exception(s"Virus detected: $virusInformation")
-class VirusScannerFailureException(val message: String) extends Exception(message)

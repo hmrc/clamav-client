@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,16 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.clamav
+package uk.gov.hmrc.clamav.unit
 
-import uk.gov.hmrc.clamav.config.ClamAvConfig
-import uk.gov.hmrc.play.test.{UnitSpec, WithFakeApplication}
+import uk.gov.hmrc.clamav.ClamAvResponseInterpreter
+import uk.gov.hmrc.clamav.model.{VirusDetectedException, VirusScannerFailureException}
+import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.util.{Failure, Success}
 
-class ClamAvResponseInterpreterSpec extends UnitSpec with WithFakeApplication {
-  val interpreter = new ClamAvResponseInterpreter {}
-
-  val clamAvConfig = ClamAvConfig(33769, "avscan", 3310, 5000, 29, 10485760)
+class ClamAvResponseInterpreterSpec extends UnitSpec {
+  val interpreter = new ClamAvResponseInterpreter
 
   "Interpreting responses from ClamAV" should {
     "return Success(true) on an OK response" in {
@@ -36,7 +35,7 @@ class ClamAvResponseInterpreterSpec extends UnitSpec with WithFakeApplication {
     }
 
     "return a Failure(_:ClamAvFailedException) on an empty response" in {
-      interpreter.invaldResponse shouldBe Failure(_:VirusScannerFailureException)
+      interpreter.invalidResponse shouldBe Failure(_:VirusScannerFailureException)
     }
   }
 }

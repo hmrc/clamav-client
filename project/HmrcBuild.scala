@@ -59,8 +59,8 @@ object HmrcBuild extends Build {
 private object AppDependencies {
 
   val compile =  Seq(
-    "uk.gov.hmrc" %% "play-json-logger" % "2.1.1",
-    "uk.gov.hmrc" %% "play-authorisation" % "3.1.0"
+    "uk.gov.hmrc" %% "play-json-logger" % "3.1.0",
+    "net.codingwell" %% "scala-guice" % "4.1.1"
   )
 
   trait TestDependencies {
@@ -72,7 +72,7 @@ private object AppDependencies {
     def apply() = new TestDependencies {
       override lazy val test = Seq(
         "org.scalatest" %% "scalatest" % "2.2.4" % scope,
-        "uk.gov.hmrc" %% "hmrctest" % "1.4.0" % scope,
+        "uk.gov.hmrc" %% "hmrctest" % "3.0.0" % scope,
         "org.pegdown" % "pegdown" % "1.5.0" % scope
       )
     }.test
