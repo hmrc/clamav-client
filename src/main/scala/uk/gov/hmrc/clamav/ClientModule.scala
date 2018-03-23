@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,12 @@
 
 package uk.gov.hmrc.clamav
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
+import play.api.{Configuration, Environment}
+import play.api.inject.{Binding, Module}
+import uk.gov.hmrc.clamav.config.{ClamAvConfig, PlayClamAvConfig}
 
-trait Streamer {
-  def send(bytes: Array[Byte])(implicit ec : ExecutionContext): Future[Unit]
-  def finish()(implicit ec : ExecutionContext): Future[Try[Boolean]]
+class ClientModule extends Module {
+  override def bindings(environment: Environment, configuration: Configuration): Seq[Binding[_]] = Seq(
+    bind[ClamAvConfig].to[PlayClamAvConfig].eagerly()
+  )
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,28 +16,21 @@
 
 package uk.gov.hmrc.clamav.config
 
+import javax.inject.Inject
+
 import play.api.Configuration
 
-case class ClamAvConfig(chunkSize: Int = 32768,
-                        host: String = "localhost",
-                        port: Int = 3310,
-                        timeout: Int = 5000,
-                        threadPoolSize: Int = 20,
-                        maxLength: Int = 10485760)
+trait ClamAvConfig {
+  val host: String
+  val port: Int
+  val timeout: Int
+}
 
+class PlayClamAvConfig @Inject()(configuration: Configuration) extends ClamAvConfig {
+  val host: String = getRequired(configuration.getString(_), "clam.antivirus.host")
+  val port: Int = getRequired(configuration.getInt, "clam.antivirus.port")
+  val timeout: Int = getRequired(configuration.getInt, "clam.antivirus.timeout")
 
-object ClamAvConfig {
-
-  def apply(configuration: Option[Configuration]): ClamAvConfig = {
-    configuration.map { c =>
-      ClamAvConfig(
-        chunkSize = c.getInt("chunkSize").getOrElse(32768),
-        host = c.getString("host").getOrElse("localhost"),
-        port = c.getInt("port").getOrElse(3310),
-        timeout = c.getInt("timeout").getOrElse(5000),
-        threadPoolSize = c.getInt("threadPoolSize").getOrElse(20),
-        maxLength = c.getInt("maxLength").getOrElse(10485760)
-      )
-    }
-  }.getOrElse(throw new Exception("Missing clamav configuration"))
+  def getRequired[T](function: String => Option[T], key: String) =
+    function(key).getOrElse(throw new IllegalStateException(s"$key missing"))
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 HM Revenue & Customs
+ * Copyright 2018 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,109 +16,70 @@
 
 package uk.gov.hmrc.clamav
 
-import java.io._
-
 import play.api.Logger
-import uk.gov.hmrc.clamav.ClamAntiVirus._
 import uk.gov.hmrc.clamav.config.ClamAvConfig
+import uk.gov.hmrc.clamav.model.{VirusDetectedException, VirusScannerFailureException}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
-trait ClamAvResponseInterpreter {
 
-  def interpretResponseFromClamd: PartialFunction[String, Try[Boolean]] = {
-    case `okClamAvResponse` =>
-      Logger.info("File clean")
-      Success(true)
-    case responseString =>
-      Logger.warn(s"Virus detected : $responseString")
-      Failure(new VirusDetectedException(responseString))
+class ClamAntiVirus(clamAvConfig: ClamAvConfig) {
+
+  private val clamAvSocket: ClamAvSocket = new ClamAvSocket(clamAvConfig)
+  private val okClamAvResponse = "stream: OK\u0000"
+
+  def sendAndCheck(bytes: Array[Byte])(implicit ec: ExecutionContext): Future[Try[Unit]] = {
+    for {
+      _ <- sendBytes(bytes)
+      checked <- checkForVirus()
+    } yield checked
   }
 
-  def invaldResponse = {
-    Logger.warn("Empty response from clamd")
-    Failure(new VirusScannerFailureException("Empty response from clamd"))
-  }
-}
-
-trait ClamAvSocket {
-  val config: ClamAvConfig
-
-  lazy val socket = openSocket()
-
-  lazy val toClam = {
-    val ds = new DataOutputStream(socket.getOutputStream)
-    ds.write(instream.getBytes())
-    ds
-  }
-
-  lazy val fromClam = socket.getInputStream
-
-  def openSocket() = {
-    import java.net.{InetSocketAddress, Socket}
-    val sock = new Socket
-    sock.setSoTimeout(config.timeout)
-    val address: InetSocketAddress = new InetSocketAddress(config.host, config.port)
-    Logger.debug(s"Attempting connection to : $address")
-    sock.connect(address)
-    sock
-  }
-}
-
-case class ClamAntiVirus(clamAvConfig: ClamAvConfig) extends ClamAvResponseInterpreter with VirusChecker with ClamAvSocket {
-  override val config: ClamAvConfig = clamAvConfig
-
-  override def send(bytes: Array[Byte])(implicit ec: ExecutionContext): Future[Unit] = {
+  private def sendBytes(bytes: Array[Byte])(implicit ec: ExecutionContext) = {
     Future {
-      toClam.writeInt(bytes.length)
-      toClam.write(bytes)
-      toClam.flush()
+      clamAvSocket.toClam.writeInt(bytes.length)
+      clamAvSocket.toClam.write(bytes)
+      clamAvSocket.toClam.flush()
     }
   }
 
-  override def finish()(implicit ec: ExecutionContext): Future[Try[Boolean]] = {
+  private def checkForVirus()(implicit ec: ExecutionContext): Future[Try[Unit]] = {
     for {
       result <- Future {
-        toClam.writeInt(0)
-        toClam.flush()
-        responseFromClamd map interpretResponseFromClamd getOrElse invaldResponse
+        clamAvSocket.toClam.writeInt(0)
+        clamAvSocket.toClam.flush()
+        readResponseFromClamd() match {
+          case Some(response) => response match {
+            case `okClamAvResponse` => Success(())
+            case badResponse => Failure(new VirusDetectedException(badResponse))
+          }
+          case None => Failure(new VirusScannerFailureException("Empty response from clamd"))
+        }
       }
       _ <- Future(terminate())
     } yield result
   }
 
-  private[clamav] def terminate() = {
+  private def terminate(): Try[Unit] = {
     Try {
-      socket.close()
-      toClam.close()
-    } recover logWarning("Error closing socket to clamd")
+      clamAvSocket.socket.close()
+      clamAvSocket.toClam.close()
+    } recover { case e: Throwable =>
+      Logger.error("Error closing socket to clamd", e)
+    }
   }
 
-  private def responseFromClamd(): Option[String] = {
+  private def readResponseFromClamd(): Option[String] = {
     val response = Option(new String(
-      Iterator.continually(fromClam.read)
+      Iterator.continually(clamAvSocket.fromClam.read)
         .takeWhile(_ != -1)
         .map(_.toByte)
         .toArray))
 
-    Logger.info(s"Response from clamd: $response")
-    response flatMap noneIfEmpty
+    response flatMap {
+      case s if s.trim.isEmpty || s == null => None
+      case s => Some(s)
+    }
   }
-
-  private def logWarning(msg: String): PartialFunction[Throwable, Unit] = {
-    case e => Logger.warn(msg, e)
-  }
-
-  def noneIfEmpty: PartialFunction[String, Option[String]] = {
-    case s if s.trim.isEmpty || s == null => None
-    case s => Some(s)
-  }
-}
-
-object ClamAntiVirus {
-  val instream = "zINSTREAM\u0000"
-  val ping = "zPING\u0000"
-  val status = "nSTATS\n"
-  val okClamAvResponse = "stream: OK\u0000"
 }

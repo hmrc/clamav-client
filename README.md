@@ -40,31 +40,31 @@ Your _**application.conf**_ should be configured to enable clamav scanning
 
 ```JavaScript
 clam.antivirus {            
-    enabled = true          
-    chunkSize = 32768       
-    host = avscan           
+    host = avscan
     port = 3310             
     timeout = 5000          
-    threadPoolSize = 20     
-    maxLength = 10485760    
 }
 ```
 
-Wire up your microservice to load the ClamAvConfig
+Wire up your microservice to load the ClamAvConfig using dependency injection by adding the following to your ```application.conf```
+
 
 ```JavaScript
-object ClamAvConfiguration extends RunMode {
-
-  lazy val config: Option[Configuration]  = Play.current.configuration.getConfig(s"$env.clam.antivirus")
-  lazy val clamAvConfig = LoadClamAvConfig(config)
-
-}
+play.modules.enabled += "uk.gov.hmrc.clamav.ClientModule"
 ```
+For an explanation on using Guice dependency injection within your Play project, see the [Play documentation](https://www.playframework.com/documentation/2.5.x/ScalaDependencyInjection).
 
-Use ClamAntiVirus
+## Use ClamAntiVirus
 
 ```JavaScript
-def clamAv: ClamAntiVirus = new ClamAntiVirus()(ClamAvConfiguration.clamAvConfig)
-clamAv.send(stream)
-clamAv.checkForVirus()
+import javax.inject.Inject
+import uk.gov.hmrc.clamav._
+
+class YourClass @Inject()(clamAvConfig: ClamAvConfig) {
+  ...
+  def sendToClamAv(): Future[Try[Unit]] = {
+   val antivirusClient = new ClamAntiVirus(clamAvConfig)
+   antivirusClient.sendAndCheck(stream)
+  }
+}
 ```
