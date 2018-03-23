@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.clamav.unit
+package uk.gov.hmrc.clamav
 
-import java.io.InputStream
+import play.api.{Configuration, Environment}
+import play.api.inject.{Binding, Module}
+import uk.gov.hmrc.clamav.config.{ClamAvConfig, PlayClamAvConfig}
 
-object FileBytes {
-  def apply(filename: String) = {
-    read(Option(getClass.getResourceAsStream(filename)).orElse(throw new Exception(s"Could not open stream to: $filename")).get)
-  }
-
-  def read(stream: InputStream) = Iterator.continually(stream.read).takeWhile(_ != -1).take(1000).map(_.toByte).toArray
+class ClientModule extends Module {
+  override def bindings(environment: Environment, configuration: Configuration): Seq[Binding[_]] = Seq(
+    bind[ClamAvConfig].to[PlayClamAvConfig].eagerly()
+  )
 }

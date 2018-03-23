@@ -46,27 +46,25 @@ clam.antivirus {
 }
 ```
 
-Wire up your microservice to load the ClamAvConfig using dependency injection within your Module. For an explanation on using Guice dependency injection within your Play project, see the [Play documentation](https://www.playframework.com/documentation/2.5.x/ScalaDependencyInjection).
+Wire up your microservice to load the ClamAvConfig using dependency injection by adding the following to your ```application.conf```
+
 
 ```JavaScript
-class YourModule extends Module {
-  override def bindings(environment: Environment, configuration: Configuration): Seq[Binding[_]] =
-    Seq(
-      ....
-      bind[ClamAvConfig].to[PlayClamAvConfig].eagerly(),
-      ....
-    )
-}
+play.modules.enabled += "uk.gov.hmrc.clamav.ClientModule"
 ```
+For an explanation on using Guice dependency injection within your Play project, see the [Play documentation](https://www.playframework.com/documentation/2.5.x/ScalaDependencyInjection).
 
-Use ClamAntiVirus
+## Use ClamAntiVirus
 
 ```JavaScript
 import javax.inject.Inject
-import uk.gov.hmrc.clamav.ClamAntiVirus
+import uk.gov.hmrc.clamav._
 
-class YourClass @Inject()(clamAv: ClamAntiVirus) {
-  clamAv.send(stream)
-  clamAv.checkForVirus()
+class YourClass @Inject()(clamAvConfig: ClamAvConfig) {
+  ...
+  def sendToClamAv(): Future[Try[Unit]] = {
+   val antivirusClient = new ClamAntiVirus(clamAvConfig)
+   antivirusClient.sendAndCheck(stream)
+  }
 }
 ```

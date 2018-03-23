@@ -59,8 +59,7 @@ object HmrcBuild extends Build {
 private object AppDependencies {
 
   val compile =  Seq(
-    "uk.gov.hmrc" %% "play-json-logger" % "3.1.0",
-    "net.codingwell" %% "scala-guice" % "4.1.1"
+    "uk.gov.hmrc" %% "play-json-logger" % "3.1.0"
   )
 
   trait TestDependencies {

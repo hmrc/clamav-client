@@ -16,32 +16,31 @@
 
 package uk.gov.hmrc.clamav
 
-import java.io.DataOutputStream
-import javax.inject.Inject
+import java.io.{DataOutputStream, InputStream}
+import java.net.{InetSocketAddress, Socket}
 
-import play.api.Logger
 import uk.gov.hmrc.clamav.config.ClamAvConfig
 
-class ClamAvSocket @Inject()(config: ClamAvConfig) {
+class ClamAvSocket(config: ClamAvConfig) {
   private val instream = "zINSTREAM\u0000"
 
-  lazy val socket = openSocket()
+  lazy val socket: Socket = openSocket()
 
-  lazy val toClam = {
+  lazy val toClam: DataOutputStream = {
     val ds = new DataOutputStream(socket.getOutputStream)
     ds.write(instream.getBytes())
     ds
   }
 
-  lazy val fromClam = socket.getInputStream
+  lazy val fromClam: InputStream = socket.getInputStream
 
-  def openSocket() = {
-    import java.net.{InetSocketAddress, Socket}
+  private def openSocket(): Socket = {
     val sock = new Socket
     sock.setSoTimeout(config.timeout)
+
     val address: InetSocketAddress = new InetSocketAddress(config.host, config.port)
-    Logger.debug(s"Attempting connection to : $address")
     sock.connect(address)
+
     sock
   }
 }

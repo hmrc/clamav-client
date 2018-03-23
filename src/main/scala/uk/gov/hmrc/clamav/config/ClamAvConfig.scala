@@ -26,7 +26,7 @@ trait ClamAvConfig {
   val timeout: Int
 }
 
-class PlayClamAvConfig @Inject()(configuration: Configuration) {
+class PlayClamAvConfig @Inject()(configuration: Configuration) extends ClamAvConfig {
   val host: String = getRequired(configuration.getString(_), "clam.antivirus.host")
   val port: Int = getRequired(configuration.getInt, "clam.antivirus.port")
   val timeout: Int = getRequired(configuration.getInt, "clam.antivirus.timeout")

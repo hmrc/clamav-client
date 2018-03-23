@@ -14,8 +14,14 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.clamav.model
+package uk.gov.hmrc.clamav.it
 
-case class VirusDetectedException(virusInformation: String) extends Exception(s"Virus detected: $virusInformation")
+import java.io.InputStream
 
-case class VirusScannerFailureException(message: String) extends Exception(message)
+object FileBytes {
+  def apply(filename: String) = {
+    read(Option(getClass.getResourceAsStream(filename)).orElse(throw new Exception(s"Could not open stream to: $filename")).get)
+  }
+
+  def read(stream: InputStream) = Iterator.continually(stream.read).takeWhile(_ != -1).take(1000).map(_.toByte).toArray
+}
