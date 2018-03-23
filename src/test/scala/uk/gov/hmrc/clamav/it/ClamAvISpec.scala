@@ -18,23 +18,21 @@ package uk.gov.hmrc.clamav.it
 
 import uk.gov.hmrc.clamav.ClamAntiVirus
 import uk.gov.hmrc.clamav.config.ClamAvConfig
-import uk.gov.hmrc.clamav.model.VirusDetectedException
+import uk.gov.hmrc.clamav.model.{Clean, Infected}
 import uk.gov.hmrc.play.test.UnitSpec
-
-import scala.util.{Failure, Success}
 
 class ClamAvsSpec extends UnitSpec {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  private val virusSig = "X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*\u0000"
+  private val virusSig         = "X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*\u0000"
   private val virusFileWithSig = "/eicar-standard-av-test-file"
-  private val cleanFile = "/162000101.pdf"
+  private val cleanFile        = "/162000101.pdf"
 
   private def instance(): ClamAntiVirus = {
     val configuration = new ClamAvConfig {
       override val timeout: Int = 5000
-      override val port: Int = 3310
+      override val port: Int    = 3310
       override val host: String = "avscan"
     }
     new ClamAntiVirus(configuration)
@@ -43,36 +41,37 @@ class ClamAvsSpec extends UnitSpec {
   "Scanning files" should {
     "allow clean files" in {
       val clamAv = instance()
-      val bytes = FileBytes(cleanFile)
+      val bytes  = FileBytes(cleanFile)
 
-      await(clamAv.sendAndCheck(bytes)) shouldBe Success(())
+      await(clamAv.sendAndCheck(bytes)) shouldBe Clean
     }
 
     "detect a virus in a file" in {
       val clamAv = instance()
-      val bytes = FileBytes(virusFileWithSig)
+      val bytes  = FileBytes(virusFileWithSig)
 
-      await(clamAv.sendAndCheck(bytes)) shouldBe Failure(_: VirusDetectedException)
+      await(clamAv.sendAndCheck(bytes)) shouldBe Infected("Eicar-Test-Signature")
     }
   }
-
 
   "Can scan stream without virus" in {
     val clamAv = instance()
 
-    await(clamAv.sendAndCheck(getBytes(payloadSize = 10000))) shouldBe Success(())
+    await(clamAv.sendAndCheck(getBytes(payloadSize = 10000))) shouldBe Clean
   }
   "Can detect a small stream with a virus at the beginning" in {
     val clamAv = instance()
 
-    await(clamAv.sendAndCheck(getBytes(shouldInsertVirusAtPosition = Some(0)))) shouldBe Failure(_: VirusDetectedException)
+    await(clamAv.sendAndCheck(getBytes(shouldInsertVirusAtPosition = Some(0)))) shouldBe Infected(
+      "Eicar-Test-Signature")
+
   }
 
   private def getPayload(payloadSize: Int = 0, shouldInsertVirusAtPosition: Option[Int] = None) = {
     val payloadData = shouldInsertVirusAtPosition match {
       case Some(position) =>
         val virusStartPosition = math.min(position, payloadSize - virusSig.length)
-        val virusEndPosition = virusStartPosition + virusSig.length
+        val virusEndPosition   = virusStartPosition + virusSig.length
 
         0.until(virusStartPosition).map(_ => "a") ++ virusSig ++ virusEndPosition.until(payloadSize).map(_ => "a")
 
@@ -85,7 +84,7 @@ class ClamAvsSpec extends UnitSpec {
     shouldInsertVirusAtPosition match {
       case Some(_) =>
         payload.contains(virusSig) should be(true)
-        payload.length should be(math.max(virusSig.length, payloadSize))
+        payload.length             should be(math.max(virusSig.length, payloadSize))
       case _ =>
         payload.length should be(payloadSize)
     }
@@ -93,8 +92,7 @@ class ClamAvsSpec extends UnitSpec {
     payload
   }
 
-  private def getBytes(payloadSize: Int = 0,
-                       shouldInsertVirusAtPosition: Option[Int] = None) =
+  private def getBytes(payloadSize: Int = 0, shouldInsertVirusAtPosition: Option[Int] = None) =
     getPayload(payloadSize, shouldInsertVirusAtPosition).getBytes()
 
 }
