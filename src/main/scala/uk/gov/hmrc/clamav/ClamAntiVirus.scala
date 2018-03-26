@@ -16,70 +16,55 @@
 
 package uk.gov.hmrc.clamav
 
+import org.apache.commons.io.IOUtils
 import play.api.Logger
 import uk.gov.hmrc.clamav.config.ClamAvConfig
-import uk.gov.hmrc.clamav.model.{VirusDetectedException, VirusScannerFailureException}
+import uk.gov.hmrc.clamav.model._
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
 
-
-class ClamAntiVirus private[clamav](clamAvConfig: ClamAvConfig) {
+class ClamAntiVirus private[clamav] (clamAvConfig: ClamAvConfig)(implicit ec: ExecutionContext) {
 
   private val clamAvSocket: ClamAvSocket = new ClamAvSocket(clamAvConfig)
-  private val okClamAvResponse = "stream: OK\u0000"
+  private val FileCleanResponse          = "stream: OK\u0000"
+  private val VirusFoundResponse         = "stream\\: (.+) FOUND\u0000".r
+  private val ParseableErrorResponse     = "(.+) ERROR\u0000".r
 
-  def sendAndCheck(bytes: Array[Byte])(implicit ec: ExecutionContext): Future[Try[Unit]] = {
+  def sendAndCheck(bytes: Array[Byte])(implicit ec: ExecutionContext): Future[ScanningResult] =
     for {
-      _ <- sendBytes(bytes)
-      checked <- checkForVirus()
-    } yield checked
+      _              <- sendRequest(bytes)
+      response       <- readResponse()
+      parsedResponse <- parseResponse(response)
+      _              <- terminate()
+    } yield parsedResponse
+
+  private def sendRequest(bytes: Array[Byte])(implicit ec: ExecutionContext) = Future {
+    clamAvSocket.toClam.writeInt(bytes.length)
+    clamAvSocket.toClam.write(bytes)
+    clamAvSocket.toClam.writeInt(0)
+    clamAvSocket.toClam.flush()
   }
 
-  private def sendBytes(bytes: Array[Byte])(implicit ec: ExecutionContext) = {
-    Future {
-      clamAvSocket.toClam.writeInt(bytes.length)
-      clamAvSocket.toClam.write(bytes)
-      clamAvSocket.toClam.flush()
+  private def readResponse(): Future[String] = Future {
+    IOUtils.toString(clamAvSocket.fromClam)
+  }
+
+  private def parseResponse(response: String) =
+    response match {
+      case FileCleanResponse             => Future.successful(Clean)
+      case VirusFoundResponse(virus)     => Future.successful(Infected(virus))
+      case ParseableErrorResponse(error) => Future.failed(new ClamAvException(error))
+      case unparseableResponse =>
+        Future.failed(new ClamAvException(s"Unparseable response from ClamAV: $unparseableResponse"))
     }
-  }
 
-  private def checkForVirus()(implicit ec: ExecutionContext): Future[Try[Unit]] = {
-    for {
-      result <- Future {
-        clamAvSocket.toClam.writeInt(0)
-        clamAvSocket.toClam.flush()
-        readResponseFromClamd() match {
-          case Some(response) => response match {
-            case `okClamAvResponse` => Success(())
-            case badResponse => Failure(new VirusDetectedException(badResponse))
-          }
-          case None => Failure(new VirusScannerFailureException("Empty response from clamd"))
-        }
-      }
-      _ <- Future(terminate())
-    } yield result
-  }
-
-  private def terminate(): Try[Unit] = {
-    Try {
+  private def terminate(): Future[Unit] =
+    Future {
       clamAvSocket.socket.close()
       clamAvSocket.toClam.close()
-    } recover { case e: Throwable =>
-      Logger.error("Error closing socket to clamd", e)
+    } recover {
+      case e: Throwable =>
+        Logger.error("Error closing socket to clamd", e)
     }
-  }
 
-  private def readResponseFromClamd(): Option[String] = {
-    val response = Option(new String(
-      Iterator.continually(clamAvSocket.fromClam.read)
-        .takeWhile(_ != -1)
-        .map(_.toByte)
-        .toArray))
-
-    response flatMap {
-      case s if s.trim.isEmpty || s == null => None
-      case s => Some(s)
-    }
-  }
 }

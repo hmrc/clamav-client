@@ -16,6 +16,9 @@
 
 package uk.gov.hmrc.clamav.model
 
-case class VirusDetectedException(virusInformation: String) extends Exception(s"Virus detected: $virusInformation")
+sealed trait ScanningResult
 
-case class VirusScannerFailureException(message: String) extends Exception(message)
+case object Clean extends ScanningResult
+case class Infected(virusName: String) extends ScanningResult
+
+class ClamAvException(message: String) extends Exception(message)
