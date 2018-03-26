@@ -60,10 +60,10 @@ For an explanation on using Guice dependency injection within your Play project,
 import javax.inject.Inject
 import uk.gov.hmrc.clamav._
 
-class YourClass @Inject()(clamAvConfig: ClamAvConfig) {
+class YourClass @Inject()(clamAntiVirusFactory: ClamAntiVirusFactory) {
   ...
   def sendToClamAv(): Future[Try[Unit]] = {
-   val antivirusClient = new ClamAntiVirus(clamAvConfig)
+   val antivirusClient = ClamAntiVirusFactory.getClient()
    antivirusClient.sendAndCheck(stream)
   }
 }

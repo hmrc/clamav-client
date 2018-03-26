@@ -24,7 +24,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 
-class ClamAntiVirus(clamAvConfig: ClamAvConfig) {
+class ClamAntiVirus private[clamav](clamAvConfig: ClamAvConfig) {
 
   private val clamAvSocket: ClamAvSocket = new ClamAvSocket(clamAvConfig)
   private val okClamAvResponse = "stream: OK\u0000"
