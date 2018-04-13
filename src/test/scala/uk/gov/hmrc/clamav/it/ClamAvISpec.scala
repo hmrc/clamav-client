@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.clamav.it
 
+import java.io.ByteArrayInputStream
+
 import uk.gov.hmrc.clamav.ClamAntiVirus
 import uk.gov.hmrc.clamav.config.ClamAvConfig
 import uk.gov.hmrc.clamav.model.{Clean, Infected}
@@ -51,6 +53,21 @@ class ClamAvsSpec extends UnitSpec {
       val bytes  = FileBytes(virusFileWithSig)
 
       await(clamAv.sendAndCheck(bytes)) shouldBe Infected("Eicar-Test-Signature")
+    }
+
+    "allow clean files sent as a stream" in {
+      val clamAv = instance()
+      val bytes  = FileBytes(cleanFile)
+
+      await(clamAv.sendAndCheck(new ByteArrayInputStream(bytes), bytes.length)) shouldBe Clean
+    }
+
+    "detect a virus in a file sent as a stream" in {
+      val clamAv = instance()
+      val bytes  = FileBytes(virusFileWithSig)
+
+      await(clamAv.sendAndCheck(new ByteArrayInputStream(bytes), bytes.length)) shouldBe Infected(
+        "Eicar-Test-Signature")
     }
   }
 

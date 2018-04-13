@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.clamav
 
+import java.io.{ByteArrayInputStream, InputStream}
+
 import org.apache.commons.io.IOUtils
 import play.api.Logger
 import uk.gov.hmrc.clamav.config.ClamAvConfig
@@ -30,17 +32,25 @@ class ClamAntiVirus private[clamav] (clamAvConfig: ClamAvConfig)(implicit ec: Ex
   private val VirusFoundResponse         = "stream\\: (.+) FOUND\u0000".r
   private val ParseableErrorResponse     = "(.+) ERROR\u0000".r
 
-  def sendAndCheck(bytes: Array[Byte])(implicit ec: ExecutionContext): Future[ScanningResult] =
+  def sendAndCheck(inputStream: InputStream, length: Int)(implicit ec: ExecutionContext): Future[ScanningResult] =
     for {
-      _              <- sendRequest(bytes)
+      _              <- sendRequest(inputStream, length)
       response       <- readResponse()
       parsedResponse <- parseResponse(response)
       _              <- terminate()
     } yield parsedResponse
 
-  private def sendRequest(bytes: Array[Byte])(implicit ec: ExecutionContext) = Future {
-    clamAvSocket.toClam.writeInt(bytes.length)
-    clamAvSocket.toClam.write(bytes)
+  def sendAndCheck(bytes: Array[Byte])(implicit ec: ExecutionContext): Future[ScanningResult] =
+    for {
+      _              <- sendRequest(new ByteArrayInputStream(bytes), bytes.length)
+      response       <- readResponse()
+      parsedResponse <- parseResponse(response)
+      _              <- terminate()
+    } yield parsedResponse
+
+  private def sendRequest(stream: InputStream, length: Int)(implicit ec: ExecutionContext) = Future {
+    clamAvSocket.toClam.writeInt(length)
+    IOUtils.copy(stream, clamAvSocket.toClam)
     clamAvSocket.toClam.writeInt(0)
     clamAvSocket.toClam.flush()
   }
