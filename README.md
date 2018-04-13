@@ -64,7 +64,9 @@ class YourClass @Inject()(clamAntiVirusFactory: ClamAntiVirusFactory) {
   ...
   def sendToClamAv(): Future[Try[Unit]] = {
    val antivirusClient = ClamAntiVirusFactory.getClient()
-   antivirusClient.sendAndCheck(stream)
+   antivirusClient.sendAndCheck(bytes)
+   //or
+   antivirusClient.sendAndCheck(inputStream, length)
   }
 }
 ```
