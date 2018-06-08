@@ -23,6 +23,8 @@ import uk.gov.hmrc.clamav.config.ClamAvConfig
 import uk.gov.hmrc.clamav.model.{Clean, Infected}
 import uk.gov.hmrc.play.test.UnitSpec
 
+import scala.Array.emptyByteArray
+
 class ClamAvsSpec extends UnitSpec {
 
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -48,10 +50,15 @@ class ClamAvsSpec extends UnitSpec {
       await(clamAv.sendAndCheck(bytes)) shouldBe Clean
     }
 
+    "allow to scan empty file" in {
+      val clamAv = instance()
+
+      await(clamAv.sendAndCheck(emptyByteArray)) shouldBe Clean
+    }
+
     "detect a virus in a file" in {
       val clamAv = instance()
       val bytes  = FileBytes(virusFileWithSig)
-
       await(clamAv.sendAndCheck(bytes)) shouldBe Infected("Eicar-Test-Signature")
     }
 
