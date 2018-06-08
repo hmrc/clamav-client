@@ -19,20 +19,19 @@ package uk.gov.hmrc.clamav
 import java.io.{DataOutputStream, InputStream}
 import java.net.{InetSocketAddress, Socket}
 
+import play.api.Logger
 import uk.gov.hmrc.clamav.config.ClamAvConfig
 
+import scala.concurrent.{ExecutionContext, Future}
+
 class ClamAvSocket(config: ClamAvConfig) {
-  private val instream = "zINSTREAM\u0000"
 
-  lazy val socket: Socket = openSocket()
+  private lazy val socket: Socket = openSocket()
 
-  lazy val toClam: DataOutputStream = {
-    val ds = new DataOutputStream(socket.getOutputStream)
-    ds.write(instream.getBytes())
-    ds
-  }
+  private lazy val toClam: DataOutputStream =
+    new DataOutputStream(socket.getOutputStream)
 
-  lazy val fromClam: InputStream = socket.getInputStream
+  private lazy val fromClam: InputStream = socket.getInputStream
 
   private def openSocket(): Socket = {
     val sock = new Socket
@@ -40,7 +39,29 @@ class ClamAvSocket(config: ClamAvConfig) {
 
     val address: InetSocketAddress = new InetSocketAddress(config.host, config.port)
     sock.connect(address)
-
     sock
+  }
+
+  private def terminate()(implicit ec: ExecutionContext): Future[Unit] =
+    Future {
+      socket.close()
+      toClam.close()
+    } recover {
+      case e: Throwable =>
+        Logger.error("Error closing socket to clamd", e)
+    }
+
+}
+
+case class Connection(in: InputStream, out: DataOutputStream)
+
+object ClamAvSocket {
+  def withSocket[T](config: ClamAvConfig)(function: Connection => Future[T])(
+    implicit ec: ExecutionContext): Future[T] = {
+
+    val socket = new ClamAvSocket(config)
+    val result = function.apply(Connection(socket.fromClam, socket.toClam))
+    result.onComplete(_ => socket.terminate())
+    result
   }
 }

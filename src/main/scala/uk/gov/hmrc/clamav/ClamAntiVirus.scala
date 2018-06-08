@@ -19,7 +19,6 @@ package uk.gov.hmrc.clamav
 import java.io.{ByteArrayInputStream, InputStream}
 
 import org.apache.commons.io.IOUtils
-import play.api.Logger
 import uk.gov.hmrc.clamav.config.ClamAvConfig
 import uk.gov.hmrc.clamav.model._
 
@@ -27,36 +26,43 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class ClamAntiVirus private[clamav] (clamAvConfig: ClamAvConfig)(implicit ec: ExecutionContext) {
 
-  private val clamAvSocket: ClamAvSocket = new ClamAvSocket(clamAvConfig)
-  private val FileCleanResponse          = "stream: OK\u0000"
-  private val VirusFoundResponse         = "stream\\: (.+) FOUND\u0000".r
-  private val ParseableErrorResponse     = "(.+) ERROR\u0000".r
+  private val Handshake              = "zINSTREAM\u0000"
+  private val FileCleanResponse      = "stream: OK\u0000"
+  private val VirusFoundResponse     = "stream\\: (.+) FOUND\u0000".r
+  private val ParseableErrorResponse = "(.+) ERROR\u0000".r
 
   def sendAndCheck(inputStream: InputStream, length: Int)(implicit ec: ExecutionContext): Future[ScanningResult] =
-    for {
-      _              <- sendRequest(inputStream, length)
-      response       <- readResponse()
-      parsedResponse <- parseResponse(response)
-      _              <- terminate()
-    } yield parsedResponse
+    if (length > 0) {
+      ClamAvSocket.withSocket(clamAvConfig) { connection =>
+        for {
+          _              <- sendHandshake(connection)
+          _              <- sendRequest(connection)(inputStream, length)
+          response       <- readResponse(connection)
+          parsedResponse <- parseResponse(response)
+        } yield parsedResponse
+      }
+    } else {
+      Future.successful(Clean)
+    }
 
   def sendAndCheck(bytes: Array[Byte])(implicit ec: ExecutionContext): Future[ScanningResult] =
-    for {
-      _              <- sendRequest(new ByteArrayInputStream(bytes), bytes.length)
-      response       <- readResponse()
-      parsedResponse <- parseResponse(response)
-      _              <- terminate()
-    } yield parsedResponse
+    sendAndCheck(new ByteArrayInputStream(bytes), bytes.length)
 
-  private def sendRequest(stream: InputStream, length: Int)(implicit ec: ExecutionContext) = Future {
-    clamAvSocket.toClam.writeInt(length)
-    IOUtils.copy(stream, clamAvSocket.toClam)
-    clamAvSocket.toClam.writeInt(0)
-    clamAvSocket.toClam.flush()
-  }
+  private def sendHandshake(connection: Connection)(implicit ec: ExecutionContext) =
+    Future {
+      connection.out.write(Handshake.getBytes)
+    }
 
-  private def readResponse(): Future[String] = Future {
-    IOUtils.toString(clamAvSocket.fromClam)
+  private def sendRequest(connection: Connection)(stream: InputStream, length: Int)(implicit ec: ExecutionContext) =
+    Future {
+      connection.out.writeInt(length)
+      IOUtils.copy(stream, connection.out)
+      connection.out.writeInt(0)
+      connection.out.flush()
+    }
+
+  private def readResponse(connection: Connection): Future[String] = Future {
+    IOUtils.toString(connection.in)
   }
 
   private def parseResponse(response: String) =
@@ -67,14 +73,4 @@ class ClamAntiVirus private[clamav] (clamAvConfig: ClamAvConfig)(implicit ec: Ex
       case unparseableResponse =>
         Future.failed(new ClamAvException(s"Unparseable response from ClamAV: $unparseableResponse"))
     }
-
-  private def terminate(): Future[Unit] =
-    Future {
-      clamAvSocket.socket.close()
-      clamAvSocket.toClam.close()
-    } recover {
-      case e: Throwable =>
-        Logger.error("Error closing socket to clamd", e)
-    }
-
 }
