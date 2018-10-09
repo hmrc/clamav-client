@@ -25,7 +25,7 @@ import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.Array.emptyByteArray
 
-class ClamAvsSpec extends UnitSpec {
+class ClamAvsISpec extends UnitSpec {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 

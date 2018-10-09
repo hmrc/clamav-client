@@ -18,11 +18,13 @@ import sbt._
 import scoverage.ScoverageKeys
 import uk.gov.hmrc.SbtAutoBuildPlugin
 import uk.gov.hmrc.versioning.SbtGitVersioning
+import uk.gov.hmrc.versioning.SbtGitVersioning.autoImport.majorVersion
 
 
 object HmrcBuild extends Build {
 
   import uk.gov.hmrc.DefaultBuildSettings._
+  import uk.gov.hmrc._
 
   val appName = "clamav-client"
 
@@ -42,17 +44,14 @@ object HmrcBuild extends Build {
   def itFilter(name: String): Boolean = ! (name endsWith "ISpec")
 
   lazy val microservice = Project(appName, file("."))
-    .enablePlugins(SbtAutoBuildPlugin, SbtGitVersioning)
+    .enablePlugins(SbtAutoBuildPlugin, SbtGitVersioning, SbtArtifactory)
+    .settings(majorVersion := 6)
     .settings(
       name := appName,
       targetJvm := "jvm-1.8",
       scalaVersion := "2.11.8",
       libraryDependencies ++= AppDependencies(),
-      testOptions in Test := Seq(Tests.Filter(itFilter)),
-      resolvers := Seq(
-          Resolver.bintrayRepo("hmrc", "releases"),
-          "typesafe-releases" at "http://repo.typesafe.com/typesafe/releases/"
-      )
+      testOptions in Test := Seq(Tests.Filter(itFilter))
     ).settings(scoverageSettings: _*)
 }
 
