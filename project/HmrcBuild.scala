@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import play.core.PlayVersion
 import sbt.Keys._
 import sbt._
 import scoverage.ScoverageKeys
-import uk.gov.hmrc.SbtAutoBuildPlugin
-import uk.gov.hmrc.versioning.SbtGitVersioning
 import uk.gov.hmrc.SbtArtifactory.autoImport.makePublicallyAvailableOnBintray
+import uk.gov.hmrc.versioning.SbtGitVersioning
 import uk.gov.hmrc.versioning.SbtGitVersioning.autoImport.majorVersion
-
 
 object HmrcBuild extends Build {
 
@@ -42,7 +41,7 @@ object HmrcBuild extends Build {
     )
   }
 
-  def itFilter(name: String): Boolean = ! (name endsWith "ISpec")
+  def itFilter(name: String): Boolean = !(name endsWith "ISpec")
 
   lazy val microservice = Project(appName, file("."))
     .enablePlugins(SbtAutoBuildPlugin, SbtGitVersioning, SbtArtifactory)
@@ -51,32 +50,34 @@ object HmrcBuild extends Build {
     .settings(
       name := appName,
       targetJvm := "jvm-1.8",
-      scalaVersion := "2.11.8",
+      scalaVersion := "2.11.12",
       libraryDependencies ++= AppDependencies(),
       testOptions in Test := Seq(Tests.Filter(itFilter))
-    ).settings(scoverageSettings: _*)
+    )
+    .settings(scoverageSettings: _*)
 }
 
 private object AppDependencies {
 
-  val compile =  Seq(
-    "uk.gov.hmrc" %% "logback-json-logger" % "3.1.0",
-    "uk.gov.hmrc" %% "play-hmrc-api" % "2.1.0"
+  val compile = Seq(
+    "uk.gov.hmrc"       %% "logback-json-logger" % "4.2.0",
+    "com.typesafe.play" %% "play"                % PlayVersion.current
   )
 
   trait TestDependencies {
-    lazy val scope: String = "test"
+    lazy val scope: String       = "test"
     lazy val test: Seq[ModuleID] = ???
   }
 
   object Test {
-    def apply() = new TestDependencies {
-      override lazy val test = Seq(
-        "org.scalatest" %% "scalatest" % "2.2.4" % scope,
-        "uk.gov.hmrc" %% "hmrctest" % "3.0.0" % scope,
-        "org.pegdown" % "pegdown" % "1.5.0" % scope
-      )
-    }.test
+    def apply() =
+      new TestDependencies {
+        override lazy val test = Seq(
+          "org.scalatest" %% "scalatest" % "3.0.5" % scope,
+          "uk.gov.hmrc"   %% "hmrctest"  % "3.3.0" % scope,
+          "org.pegdown"   % "pegdown"    % "1.5.0" % scope
+        )
+      }.test
   }
 
   def apply() = compile ++ Test()
