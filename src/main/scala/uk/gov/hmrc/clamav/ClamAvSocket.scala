@@ -24,28 +24,12 @@ import uk.gov.hmrc.clamav.config.ClamAvConfig
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class ClamAvSocket(config: ClamAvConfig) {
-
-  private lazy val socket: Socket = openSocket()
-
-  private lazy val toClam: DataOutputStream =
-    new DataOutputStream(socket.getOutputStream)
-
-  private lazy val fromClam: InputStream = socket.getInputStream
-
-  private def openSocket(): Socket = {
-    val sock = new Socket
-    sock.setSoTimeout(config.timeout)
-
-    val address: InetSocketAddress = new InetSocketAddress(config.host, config.port)
-    sock.connect(address)
-    sock
-  }
+class ClamAvSocket(socket: Socket, val in : InputStream, val out : DataOutputStream) extends Connection {
 
   private def terminate()(implicit ec: ExecutionContext): Future[Unit] =
     Future {
       socket.close()
-      toClam.close()
+      out.close()
     } recover {
       case e: Throwable =>
         Logger.error("Error closing socket to clamd", e)
@@ -53,15 +37,37 @@ class ClamAvSocket(config: ClamAvConfig) {
 
 }
 
-case class Connection(in: InputStream, out: DataOutputStream)
+trait Connection {
+  def in: InputStream
+  def out: DataOutputStream
+}
 
 object ClamAvSocket {
+
+  private def openSocket(config : ClamAvConfig)(implicit ec : ExecutionContext) = Future {
+    val sock = new Socket
+    sock.setSoTimeout(config.timeout)
+
+    val address: InetSocketAddress = new InetSocketAddress(config.host, config.port)
+    sock.connect(address)
+
+    val out: DataOutputStream =
+      new DataOutputStream(sock.getOutputStream)
+
+    val in: InputStream = sock.getInputStream
+
+    new ClamAvSocket(sock, in, out)
+  }
+
   def withSocket[T](config: ClamAvConfig)(function: Connection => Future[T])(
     implicit ec: ExecutionContext): Future[T] = {
-
-    val socket = new ClamAvSocket(config)
-    val result = function.apply(Connection(socket.fromClam, socket.toClam))
-    result.onComplete(_ => socket.terminate())
-    result
+    for {
+      socket <- openSocket(config)
+      result <- {
+        val functionResult = function(socket)
+        functionResult.onComplete(_ => socket.terminate())
+        functionResult
+      }
+    } yield result
   }
 }
