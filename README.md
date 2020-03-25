@@ -1,6 +1,8 @@
 
 # clamav-client
 
+**This library is no longer maintained.  For Scala 2.12 the functionality provided by this library was inlined directly within its client service: [upscan-verify](https://github.com/hmrc/upscan-verify)**
+
 [![Build Status](https://travis-ci.org/hmrc/clamav-client.svg?branch=master)](https://travis-ci.org/hmrc/clamav-client) [ ![Download](https://api.bintray.com/packages/hmrc/releases/clamav-client/images/download.svg) ](https://bintray.com/hmrc/releases/clamav-client/_latestVersion)
 
 ## Local Installation
