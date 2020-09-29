@@ -14,14 +14,8 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.clamav
+package uk.gov.hmrc.clamav.unit
 
-import play.api.{Configuration, Environment}
-import play.api.inject.{Binding, Module}
-import uk.gov.hmrc.clamav.config.{ClamAvConfig, PlayClamAvConfig}
+import org.scalatest.{Matchers, OptionValues, WordSpecLike}
 
-class ClientModule extends Module {
-  override def bindings(environment: Environment, configuration: Configuration): Seq[Binding[_]] = Seq(
-    bind[ClamAvConfig].to[PlayClamAvConfig].eagerly()
-  )
-}
+trait UnitSpec extends WordSpecLike with Matchers with OptionValues

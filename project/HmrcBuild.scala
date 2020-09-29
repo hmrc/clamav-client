@@ -45,12 +45,12 @@ object HmrcBuild extends Build {
 
   lazy val microservice = Project(appName, file("."))
     .enablePlugins(SbtAutoBuildPlugin, SbtGitVersioning, SbtArtifactory)
-    .settings(majorVersion := 6)
+    .settings(majorVersion := 7)
     .settings(makePublicallyAvailableOnBintray := true)
     .settings(
       name := appName,
       targetJvm := "jvm-1.8",
-      scalaVersion := "2.11.12",
+      scalaVersion := "2.12.12",
       libraryDependencies ++= AppDependencies(),
       testOptions in Test := Seq(Tests.Filter(itFilter))
     )
@@ -67,28 +67,13 @@ private object AppDependencies {
     "com.fasterxml.jackson.core"     % "jackson-databind"        % "2.9.8",
     "com.fasterxml.jackson.core"     % "jackson-annotations"     % "2.9.8",
     "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8"   % "2.9.8",
-    "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % "2.9.8",
-    // force dependencies due to security flaws found in xercesImpl 2.11.0
-    // only applies to play 2.5 since it was removed from play 2.6 
-    // https://github.com/playframework/playframework/blob/master/documentation/manual/releases/release26/migration26/Migration26.md#xercesimpl-removal
-    "xerces" % "xercesImpl" % "2.12.0"
+    "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % "2.9.8"
   )
 
-  trait TestDependencies {
-    lazy val scope: String       = "test"
-    lazy val test: Seq[ModuleID] = ???
-  }
+  val test = Seq(
+    "org.scalatest" %% "scalatest" % "3.0.5" % "test",
+    "org.pegdown"   % "pegdown"    % "1.6.0" % "test"
+  )
 
-  object Test {
-    def apply() =
-      new TestDependencies {
-        override lazy val test = Seq(
-          "org.scalatest" %% "scalatest" % "3.0.5" % scope,
-          "uk.gov.hmrc"   %% "hmrctest"  % "3.3.0" % scope,
-          "org.pegdown"   % "pegdown"    % "1.6.0" % scope
-        )
-      }.test
-  }
-
-  def apply() = compile ++ Test()
+  def apply() = compile ++ test
 }

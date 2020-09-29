@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 HM Revenue & Customs
+ * Copyright 2020 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,15 @@ package uk.gov.hmrc.clamav.it
 
 import java.io.ByteArrayInputStream
 
+import org.scalatest.concurrent.ScalaFutures
 import uk.gov.hmrc.clamav.ClamAntiVirus
 import uk.gov.hmrc.clamav.config.ClamAvConfig
 import uk.gov.hmrc.clamav.model.{Clean, Infected}
-import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.clamav.unit.UnitSpec
 
 import scala.Array.emptyByteArray
 
-class ClamAvsISpec extends UnitSpec {
+class ClamAvsISpec extends UnitSpec with ScalaFutures {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -47,48 +48,47 @@ class ClamAvsISpec extends UnitSpec {
       val clamAv = instance()
       val bytes  = FileBytes(cleanFile)
 
-      await(clamAv.sendAndCheck(bytes)) shouldBe Clean
+      clamAv.sendAndCheck(bytes).futureValue shouldBe Clean
     }
 
     "allow to scan empty file" in {
       val clamAv = instance()
 
-      await(clamAv.sendAndCheck(emptyByteArray)) shouldBe Clean
+      clamAv.sendAndCheck(emptyByteArray).futureValue shouldBe Clean
     }
 
     "detect a virus in a file" in {
       val clamAv = instance()
       val bytes  = FileBytes(virusFileWithSig)
-      await(clamAv.sendAndCheck(bytes)) shouldBe Infected("Eicar-Test-Signature")
+      clamAv.sendAndCheck(bytes).futureValue shouldBe Infected("Eicar-Test-Signature")
     }
 
     "allow clean files sent as a stream" in {
       val clamAv = instance()
       val bytes  = FileBytes(cleanFile)
 
-      await(clamAv.sendAndCheck(new ByteArrayInputStream(bytes), bytes.length)) shouldBe Clean
+      clamAv.sendAndCheck(new ByteArrayInputStream(bytes), bytes.length).futureValue shouldBe Clean
     }
 
     "detect a virus in a file sent as a stream" in {
       val clamAv = instance()
       val bytes  = FileBytes(virusFileWithSig)
 
-      await(clamAv.sendAndCheck(new ByteArrayInputStream(bytes), bytes.length)) shouldBe Infected(
-        "Eicar-Test-Signature")
+      clamAv.sendAndCheck(new ByteArrayInputStream(bytes), bytes.length).futureValue shouldBe
+        Infected("Eicar-Test-Signature")
     }
   }
 
   "Can scan stream without virus" in {
     val clamAv = instance()
 
-    await(clamAv.sendAndCheck(getBytes(payloadSize = 10000))) shouldBe Clean
+    clamAv.sendAndCheck(getBytes(payloadSize = 10000)).futureValue shouldBe Clean
   }
   "Can detect a small stream with a virus at the beginning" in {
     val clamAv = instance()
 
-    await(clamAv.sendAndCheck(getBytes(shouldInsertVirusAtPosition = Some(0)))) shouldBe Infected(
-      "Eicar-Test-Signature")
-
+    clamAv.sendAndCheck(getBytes(shouldInsertVirusAtPosition = Some(0))).futureValue shouldBe
+      Infected("Eicar-Test-Signature")
   }
 
   private def getPayload(payloadSize: Int = 0, shouldInsertVirusAtPosition: Option[Int] = None) = {

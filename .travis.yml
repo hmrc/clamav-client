@@ -1,11 +1,8 @@
 sudo: required
-dist: precise
 
 language: scala
-scala:
-- 2.11.8
-jdk:
-- oraclejdk8
+script: sbt test
+jdk: openjdk8
 cache:
   directories:
     - $HOME/.sbt/0.13/dependency
