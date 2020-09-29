@@ -1,7 +1,7 @@
 
 # clamav-client
 
-**This library is no longer maintained.  For Scala 2.12 the functionality provided by this library was inlined directly within its client service: [upscan-verify](https://github.com/hmrc/upscan-verify)**
+**This library is no longer maintained.**
 
 [![Build Status](https://travis-ci.org/hmrc/clamav-client.svg?branch=master)](https://travis-ci.org/hmrc/clamav-client) [ ![Download](https://api.bintray.com/packages/hmrc/releases/clamav-client/images/download.svg) ](https://bintray.com/hmrc/releases/clamav-client/_latestVersion)
 
@@ -32,7 +32,7 @@ Make sure clamd.conf has
 ```LocalSocket /usr/local/var/run/clamav/clamd.sock```
 ```TCPSocket 3310```
 
-###### To use clamav-client 
+###### To use clamav-client
 Add the latest released version of the clamav-client to your app dependencies of your micro service build
 
 e.g. ```"uk.gov.hmrc" %% "clamav-client" % "```[```version```](https://bintray.com/hmrc/releases/clamav-client/_latestVersion)```"```
@@ -41,10 +41,10 @@ Your _**application.conf**_ should be configured to enable clamav scanning
 
 
 ```JavaScript
-clam.antivirus {            
+clam.antivirus {
     host = avscan
-    port = 3310             
-    timeout = 5000          
+    port = 3310
+    timeout = 5000
 }
 ```
 
