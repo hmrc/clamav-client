@@ -17,7 +17,6 @@ import play.core.PlayVersion
 import sbt.Keys._
 import sbt._
 import scoverage.ScoverageKeys
-import uk.gov.hmrc.SbtArtifactory.autoImport.makePublicallyAvailableOnBintray
 import uk.gov.hmrc.versioning.SbtGitVersioning
 import uk.gov.hmrc.versioning.SbtGitVersioning.autoImport.majorVersion
 
@@ -46,7 +45,6 @@ object HmrcBuild extends Build {
   lazy val microservice = Project(appName, file("."))
     .enablePlugins(SbtAutoBuildPlugin, SbtGitVersioning, SbtArtifactory)
     .settings(majorVersion := 7)
-    .settings(makePublicallyAvailableOnBintray := true)
     .settings(
       name := appName,
       targetJvm := "jvm-1.8",
